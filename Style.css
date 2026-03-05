@@ -1,0 +1,583 @@
+/* =========================
+   RESET
+========================= */
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+}
+
+
+/* =========================
+   STORY 1080x1920
+========================= */
+
+.instagram-story{
+
+width:1080px;
+height:1920px;
+
+position:relative;
+overflow:hidden;
+
+clip-path: inset(0 round 64px);
+
+background:linear-gradient(
+160deg,
+#111827 0%,
+#0f766e 40%,
+#115e59 100%
+);
+
+color:white;
+font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+}
+
+
+/* =========================
+   IMAGEM
+========================= */
+
+#story-image-preview{
+
+position:absolute;
+inset:0;
+
+width:100%;
+height:100%;
+
+object-fit:cover;
+object-position:center;
+
+}
+
+
+/* =========================
+   BLUR BACKGROUND
+========================= */
+
+.story-bg-blur{
+
+position:absolute;
+inset:0;
+
+background-size:cover;
+background-position:center;
+
+filter:blur(22px);
+
+transform:scale(1.08);
+
+opacity:0.55;
+
+}
+
+
+/* =========================
+   OVERLAY
+========================= */
+
+.story-overlay{
+
+position:absolute;
+inset:0;
+
+background:linear-gradient(
+180deg,
+rgba(0,0,0,0.0) 0%,
+rgba(0,0,0,0.65) 65%,
+rgba(0,0,0,0.85) 100%
+);
+
+}
+
+
+/* =========================
+   LOGO
+========================= */
+
+.story-logo{
+
+position:absolute;
+
+top:54px;
+left:54px;
+
+width:180px;
+height:180px;
+
+border-radius:48px;
+
+overflow:hidden;
+
+background:rgba(255,255,255,0.12);
+
+border:1px solid rgba(255,255,255,0.18);
+
+}
+
+
+/* =========================
+   CONTEÚDO
+========================= */
+
+.story-content{
+
+position:absolute;
+
+left:54px;
+right:54px;
+
+bottom:204px;
+
+z-index:2;
+
+}
+
+
+/* =========================
+   BADGE
+========================= */
+
+.story-badge{
+
+background:#f97316;
+
+padding:18px 30px;
+
+border-radius:999px;
+
+font-weight:800;
+
+font-size:36px;
+
+display:inline-block;
+
+margin-bottom:30px;
+
+}
+
+
+/* =========================
+   TITULO
+========================= */
+
+.story-title{
+
+font-size:72px;
+
+font-weight:900;
+
+line-height:1.1;
+
+margin-bottom:20px;
+
+}
+
+
+/* =========================
+   PREÇO
+========================= */
+
+.story-price{
+
+font-size:66px;
+
+font-weight:900;
+
+margin-bottom:20px;
+
+}
+
+
+/* =========================
+   META
+========================= */
+
+.story-meta{
+
+display:flex;
+
+gap:30px;
+
+font-size:36px;
+
+opacity:0.92;
+
+margin-bottom:24px;
+
+}
+
+
+/* =========================
+   DESCRIÇÃO
+========================= */
+
+.story-description{
+
+font-size:40px;
+
+line-height:1.3;
+
+margin-bottom:30px;
+
+opacity:0.95;
+
+/* QUEBRA AUTOMÁTICA */
+
+white-space:normal;
+
+overflow-wrap:anywhere;
+
+word-break:break-word;
+
+/* LIMITA LINHAS */
+
+display:-webkit-box;
+-webkit-box-orient:vertical;
+-webkit-line-clamp:3;
+
+overflow:hidden;
+
+}
+
+
+/* =========================
+   CTA
+========================= */
+
+.story-cta{
+
+background:rgba(255,255,255,0.12);
+
+border:1px solid rgba(255,255,255,0.18);
+
+border-radius:54px;
+
+padding:36px 42px;
+
+backdrop-filter:blur(10px);
+
+}
+
+
+.story-cta-title{
+
+font-size:36px;
+
+font-weight:900;
+
+margin-bottom:8px;
+
+}
+
+
+.story-contact{
+
+font-size:42px;
+
+font-weight:800;
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.story-footer{
+
+position:absolute;
+
+left:54px;
+right:54px;
+
+bottom:48px;
+
+display:flex;
+
+justify-content:space-between;
+
+font-size:33px;
+
+opacity:0.85;
+
+z-index:2;
+
+}
+
+
+/* =========================
+   PAINEL FORM
+========================= */
+
+.panel{
+
+border:1px solid rgba(255,255,255,0.08);
+
+background:rgba(15,23,42,0.55);
+
+border-radius:24px;
+
+padding:20px;
+
+backdrop-filter:blur(10px);
+
+}
+
+
+.panel-header{
+
+display:flex;
+
+margin-bottom:14px;
+
+}
+
+
+.panel-title{
+
+font-size:22px;
+
+font-weight:800;
+
+}
+
+
+.panel-subtitle{
+
+font-size:13px;
+
+opacity:0.8;
+
+margin-top:6px;
+
+}
+
+
+/* =========================
+   SEÇÕES
+========================= */
+
+.section{
+
+border:1px solid rgba(255,255,255,0.08);
+
+background:rgba(2,6,23,0.35);
+
+border-radius:18px;
+
+padding:14px;
+
+margin-top:12px;
+
+}
+
+
+.section-title{
+
+font-size:13px;
+
+font-weight:800;
+
+letter-spacing:0.04em;
+
+text-transform:uppercase;
+
+opacity:0.9;
+
+margin-bottom:12px;
+
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.grid-2{
+
+display:grid;
+
+grid-template-columns:1fr;
+
+gap:12px;
+
+}
+
+@media (min-width:900px){
+
+.grid-2{
+
+grid-template-columns:1fr 1fr;
+
+}
+
+}
+
+
+/* =========================
+   CAMPOS
+========================= */
+
+.field{
+
+display:flex;
+
+flex-direction:column;
+
+gap:6px;
+
+}
+
+
+.label{
+
+font-size:13px;
+
+font-weight:700;
+
+opacity:0.9;
+
+}
+
+
+.hint{
+
+font-size:12px;
+
+opacity:0.7;
+
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.input,
+.textarea,
+.select{
+
+width:100%;
+
+border-radius:14px;
+
+padding:12px;
+
+border:1px solid rgba(255,255,255,0.10);
+
+background:rgba(30,41,59,0.65);
+
+color:white;
+
+outline:none;
+
+}
+
+
+.textarea{
+
+min-height:92px;
+
+resize:vertical;
+
+}
+
+
+.input:focus,
+.textarea:focus,
+.select:focus{
+
+border-color:rgba(255,255,255,0.22);
+
+box-shadow:0 0 0 3px rgba(255,255,255,0.07);
+
+}
+
+
+/* =========================
+   FILE
+========================= */
+
+.file{
+
+width:100%;
+
+border-radius:14px;
+
+padding:10px;
+
+border:1px dashed rgba(255,255,255,0.18);
+
+background:rgba(30,41,59,0.35);
+
+color:white;
+
+}
+
+
+/* =========================
+   RANGE
+========================= */
+
+.range{
+
+width:100%;
+
+}
+
+
+/* =========================
+   BOTÕES
+========================= */
+
+.btn{
+
+width:100%;
+
+border:0;
+
+border-radius:14px;
+
+padding:12px 14px;
+
+font-weight:900;
+
+cursor:pointer;
+
+transition:0.15s ease;
+
+color:white;
+
+}
+
+
+.btn-green{
+
+background:#059669;
+
+}
+
+.btn-green:hover{
+
+filter:brightness(1.08);
+
+}
+
+
+.btn-orange{
+
+background:#f97316;
+
+}
+
+.btn-orange:hover{
+
+filter:brightness(1.08);
+
+}
+.btn-blue{ background:#2563eb; }
+.btn-blue:hover{ filter:brightness(1.08); }
