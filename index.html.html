@@ -6,17 +6,14 @@
   <title>Gerador de Story - Villela Imóveis</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- ✅ dom-to-image-more (tem que vir ANTES do script.js) -->
   <script src="https://unpkg.com/dom-to-image-more@2.8.0/dist/dom-to-image-more.min.js"></script>
 
-  <link rel="stylesheet" href="Style.css" />
+  <link rel="stylesheet" href="./Style.css" />
 </head>
 
 <body class="bg-slate-950 text-white min-h-screen p-6">
   <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
 
-    <!-- PAINEL (FORM) -->
     <div class="panel">
       <div class="panel-header">
         <div>
@@ -28,7 +25,7 @@
       <div class="section">
         <div class="section-title">Tipo do anúncio</div>
         <div class="field">
-          <label class="label">Selo</label>
+          <label class="label" for="badge">Selo</label>
           <input id="badge" class="input" placeholder="Ex: GALPÃO PARA ALUGAR" value="IMÓVEL À VENDA" />
           <div class="hint">Esse texto aparece no selo laranja.</div>
         </div>
@@ -39,42 +36,42 @@
 
         <div class="grid-2">
           <div class="field">
-            <label class="label">Título</label>
+            <label class="label" for="title">Título</label>
             <input id="title" class="input" placeholder="Ex: Casa com 2 dormitórios" />
           </div>
 
           <div class="field">
-            <label class="label">Preço</label>
+            <label class="label" for="price">Preço</label>
             <input id="price" class="input" placeholder="Ex: R$ 350.000" />
           </div>
         </div>
 
         <div class="grid-2">
           <div class="field">
-            <label class="label">Cidade</label>
+            <label class="label" for="city">Cidade</label>
             <input id="city" class="input" placeholder="Ex: Itaquaquecetuba" />
           </div>
 
           <div class="field">
-            <label class="label">Bairro</label>
+            <label class="label" for="district">Bairro</label>
             <input id="district" class="input" placeholder="Ex: Centro" />
           </div>
         </div>
 
         <div class="grid-2">
           <div class="field">
-            <label class="label">Área (m²)</label>
+            <label class="label" for="area">Área (m²)</label>
             <input id="area" class="input" placeholder="Ex: 80" />
           </div>
 
           <div class="field">
-            <label class="label">Contato (Instagram / WhatsApp)</label>
+            <label class="label" for="contact">Contato (Instagram / WhatsApp)</label>
             <input id="contact" class="input" placeholder="Ex: @villelaimoveis / (11) 99999-9999" />
           </div>
         </div>
 
         <div class="field">
-          <label class="label">Descrição</label>
+          <label class="label" for="description">Descrição</label>
           <textarea id="description" class="textarea" placeholder="Ex: 2 dormitórios, 1 vaga, ótima localização."></textarea>
           <div class="hint">Dica: 1 a 2 linhas funciona melhor em story.</div>
         </div>
@@ -84,12 +81,12 @@
         <div class="section-title">Imagens</div>
         <div class="grid-2">
           <div class="field">
-            <label class="label">Imagem do imóvel</label>
+            <label class="label" for="image-upload-story">Imagem do imóvel</label>
             <input id="image-upload-story" type="file" accept="image/*" class="file" />
           </div>
 
           <div class="field">
-            <label class="label">Logo</label>
+            <label class="label" for="logo-upload-story">Logo</label>
             <input id="logo-upload-story" type="file" accept="image/*" class="file" />
           </div>
         </div>
@@ -100,7 +97,7 @@
 
         <div class="grid-2">
           <div class="field">
-            <label class="label">Modo</label>
+            <label class="label" for="image-fit">Modo</label>
             <select id="image-fit" class="select">
               <option value="cover" selected>Cortar (preenche)</option>
               <option value="contain">Encaixar (sem corte)</option>
@@ -108,7 +105,7 @@
           </div>
 
           <div class="field">
-            <label class="label">Fundo (modo encaixar)</label>
+            <label class="label" for="contain-bg">Fundo (modo encaixar)</label>
             <select id="contain-bg" class="select">
               <option value="true" selected>Blur ligado</option>
               <option value="false">Blur desligado</option>
@@ -117,12 +114,12 @@
         </div>
 
         <div class="field">
-          <label class="label">Posição Horizontal</label>
+          <label class="label" for="pos-x">Posição Horizontal</label>
           <input id="pos-x" type="range" min="0" max="100" value="50" class="range" />
         </div>
 
         <div class="field">
-          <label class="label">Posição Vertical</label>
+          <label class="label" for="pos-y">Posição Vertical</label>
           <input id="pos-y" type="range" min="0" max="100" value="50" class="range" />
         </div>
       </div>
@@ -131,7 +128,7 @@
         <div class="section-title">Buscar imagem por URL</div>
 
         <div class="field">
-          <label class="label">URL do anúncio</label>
+          <label class="label" for="imovel-url">URL do anúncio</label>
           <input id="imovel-url" class="input" placeholder="Cole aqui o link do imóvel" />
           <div class="hint">O backend pega a imagem do anúncio e joga no story.</div>
         </div>
@@ -142,26 +139,38 @@
         </div>
 
         <div style="margin-top:12px">
-          <button id="post-story" class="btn btn-blue" type="button">Postar no Story (1 clique)</button>
+          <button id="post-story" class="btn btn-blue" type="button">Postar no Story</button>
           <div class="hint" style="margin-top:8px">
-            No celular abre o compartilhar → Instagram Stories. No PC baixa e abre o Instagram Web.
+            No celular abre o compartilhar. No PC baixa a imagem e abre o Instagram.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- PREVIEW 360x640 -->
     <div class="flex items-center justify-center">
       <div style="width:360px;height:640px;overflow:hidden;border-radius:32px">
         <div style="transform:scale(0.333333);transform-origin:top left">
           <div id="story-preview-wrapper" class="instagram-story shadow-2xl">
             <div id="story-bg-blur" class="story-bg-blur hidden"></div>
 
-            <img id="story-image-preview" src="" class="hidden" crossorigin="anonymous" />
+            <img
+              id="story-image-preview"
+              src=""
+              class="hidden"
+              crossorigin="anonymous"
+              alt="Imagem do imóvel"
+            />
+
             <div class="story-overlay"></div>
 
             <div class="story-logo">
-              <img id="story-logo-preview" src="" class="h-full w-full hidden" crossorigin="anonymous" />
+              <img
+                id="story-logo-preview"
+                src=""
+                class="h-full w-full hidden"
+                crossorigin="anonymous"
+                alt="Logo da imobiliária"
+              />
             </div>
 
             <div class="story-content">
@@ -193,7 +202,6 @@
 
   </div>
 
-  <!-- ✅ seu JS por último -->
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>

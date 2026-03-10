@@ -1,5 +1,7 @@
 console.log("✅ script.js carregou");
 
+const API_BASE = "https://automo-o-com-ia-para-post-no-intagram.onrender.com";
+
 function $(id) {
   return document.getElementById(id);
 }
@@ -122,7 +124,6 @@ document.addEventListener("DOMContentLoaded", () => {
       storyImage.classList.remove("hidden");
       applyImageSettings();
 
-      // invalida cache do story
       LAST_STORY_BLOB = null;
       LAST_STORY_CREATED_AT = 0;
     };
@@ -144,7 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
       img.src = ev.target.result;
       img.classList.remove("hidden");
 
-      // invalida cache
       LAST_STORY_BLOB = null;
       LAST_STORY_CREATED_AT = 0;
     };
@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     BUSCAR IMAGEM (BACKEND)
+     BUSCAR IMAGEM (BACKEND RENDER)
   ========================= */
   $("buscar-imagem-ia")?.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!url) return alert("Cole a URL do imóvel");
 
     try {
-      const res = await fetch("http://127.0.0.1:3000/analisar-imovel", {
+      const res = await fetch(`${API_BASE}/analisar-imovel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -181,12 +181,11 @@ document.addEventListener("DOMContentLoaded", () => {
       storyImage.classList.remove("hidden");
       applyImageSettings();
 
-      // invalida cache
       LAST_STORY_BLOB = null;
       LAST_STORY_CREATED_AT = 0;
     } catch (err) {
       console.error(err);
-      alert("Erro ao buscar imagem (veja Console F12).");
+      alert("Erro ao buscar imagem no backend online. Veja o Console F12.");
     }
   });
 
@@ -226,7 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ waitForImages finalizado");
   }
 
-  // remove efeitos pesados apenas no CLONE (dom-to-image)
   function stripHeavyCssForExport(root) {
     try {
       root.querySelectorAll("*").forEach((el) => {
@@ -303,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("post-story existe?", !!postBtn);
 
   /* =========================
-     BAIXAR PNG (OK)
+     BAIXAR PNG
   ========================= */
   downloadBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -314,7 +312,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       let handle = null;
 
-      // ✅ Picker NO CLIQUE
       if (window.showSaveFilePicker) {
         console.log("💾 Abrindo 'Salvar como...' (no clique)");
         handle = await window.showSaveFilePicker({
@@ -341,8 +338,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const w = window.open("about:blank", "_blank");
-      if (w) w.location.href = dataUrl;
-      else alert("Pop-up bloqueado. Permita pop-ups para 127.0.0.1.");
+      if (w) {
+        w.location.href = dataUrl;
+      } else {
+        alert("Pop-up bloqueado. Permita pop-ups no navegador.");
+      }
     } catch (err) {
       console.error(err);
       alert("Falhou ao baixar PNG: " + (err?.message || err));
@@ -350,9 +350,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     POSTAR NO STORY (CORRIGIDO)
-     PC: salva + abre instagram (1 clique)
-     CELULAR: 2 cliques (1º gera, 2º compartilha)
+     POSTAR NO STORY
+     PC: salva + abre instagram
+     CELULAR: 2 cliques
   ========================= */
   postBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -361,7 +361,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ clique chegou no POSTAR");
 
     try {
-      // ===== PC: não tenta share (não posta story automaticamente no web)
       if (!isMobile()) {
         let handle = null;
 
@@ -397,11 +396,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ===== CELULAR: 2 passos por causa do 'user gesture' do share
       const now = Date.now();
-      const blobFresh = LAST_STORY_BLOB && (now - LAST_STORY_CREATED_AT) < 120000; // 2 min
+      const blobFresh = LAST_STORY_BLOB && (now - LAST_STORY_CREATED_AT) < 120000;
 
-      // Se já tem blob pronto, compartilha AGORA (no gesto do clique)
       if (blobFresh && navigator.share && navigator.canShare) {
         const file = new File([LAST_STORY_BLOB], "story-villela.png", { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
@@ -414,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // Não tem blob pronto: gera agora e pede 2º clique
       alert("Gerando o arquivo… quando terminar, clique de novo em 'Postar no Story' para abrir o Compartilhar.");
 
       console.log("⏳ Gerando PNG (mobile)...");
@@ -425,7 +421,6 @@ document.addEventListener("DOMContentLoaded", () => {
       LAST_STORY_CREATED_AT = Date.now();
 
       alert("✅ Pronto! Clique de novo em 'Postar no Story' para abrir o Compartilhar.");
-
     } catch (err) {
       console.error(err);
       alert("Falhou ao postar: " + (err?.message || err));
