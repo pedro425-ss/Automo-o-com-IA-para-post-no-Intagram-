@@ -120,7 +120,7 @@
 
           if (!response.ok) {
             if (applied > 0) {
-              alert("Consegui preencher alguns dados, mas não encontrei a imagem principal.");
+              alert("Consegui preencher alguns dados do imóvel, mas a imagem principal não ficou disponível.");
               return;
             }
             const candidateHint = Array.isArray(json.candidatos) && json.candidatos.length
@@ -130,8 +130,15 @@
           }
 
           if (!applied) {
-            alert("O anúncio abriu, mas não encontrei informações que eu pudesse preencher automaticamente.");
+            const resolved = json.urlResolvida || data.urlResolvida || "";
+            alert(resolved
+              ? "A página foi localizada, mas o site não entregou os dados em formato legível para o preenchimento automático."
+              : "O anúncio abriu, mas não encontrei informações que eu pudesse preencher automaticamente.");
             return;
+          }
+
+          if (json.aviso && applied > 0) {
+            console.warn(json.aviso);
           }
 
           const found = [];
