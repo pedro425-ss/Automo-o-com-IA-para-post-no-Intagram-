@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { Pool } from "pg";
 
 const app = express();
-const APP_BUILD = "villela-resolver-20261016-1045";
+const APP_BUILD = "villela-safe-gallery-20261016-1148";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -479,7 +479,7 @@ function findImageFromJsonLd(items) {
 }
 
 
-function addImageCandidate(list, candidate, pageUrl, score = 0, source = "") {
+function addImageCandidate(list, candidate, pageUrl, score = 0, source = "", listingCode = "") {
   const raw = cleanText(candidate);
   if (!raw) return;
 
@@ -491,6 +491,10 @@ function addImageCandidate(list, candidate, pageUrl, score = 0, source = "") {
     if (!value || /^data:/i.test(value)) continue;
     const url = absoluteUrl(value, pageUrl);
     if (!/^https?:\/\//i.test(url)) continue;
+
+    const explicitCodes = [...decodeURIComponent(url).matchAll(/([A-Z]{2,5}\d{2,8}_[A-Z0-9]+)/gi)]
+      .map((match) => String(match[1] || "").toUpperCase());
+    if (listingCode && explicitCodes.some((code) => code !== listingCode.toUpperCase())) continue;
 
     let finalScore = score;
     const lower = url.toLowerCase();
@@ -507,7 +511,7 @@ function addImageCandidate(list, candidate, pageUrl, score = 0, source = "") {
   }
 }
 
-function collectImageCandidates($, pageUrl, jsonLd = []) {
+function collectImageCandidates($, pageUrl, jsonLd = [], listingCode = "") {
   const candidates = [];
 
   [
@@ -518,22 +522,40 @@ function collectImageCandidates($, pageUrl, jsonLd = []) {
     ['link[rel="image_src"]', 105, "image_src"],
   ].forEach(([selector, score, source]) => {
     const attr = selector.startsWith("link") ? "href" : "content";
-    $(selector).each((_, el) => addImageCandidate(candidates, $(el).attr(attr), pageUrl, score, source));
+    $(selector).each((_, el) => addImageCandidate(candidates, $(el).attr(attr), pageUrl, score, source, listingCode));
   });
 
   for (const item of jsonLd) {
+    const itemUrl = cleanText(item?.url || item?.["@id"] || "");
+    const itemCode = extractPropertyCode(itemUrl);
+    if (listingCode && itemCode && itemCode !== listingCode) continue;
+
     const image = item?.image;
     const values = Array.isArray(image) ? image : image ? [image] : [];
     values.forEach((value) => {
-      if (typeof value === "string") addImageCandidate(candidates, value, pageUrl, 112, "json-ld:image");
-      else if (value?.url) addImageCandidate(candidates, value.url, pageUrl, 112, "json-ld:image");
-      else if (value?.contentUrl) addImageCandidate(candidates, value.contentUrl, pageUrl, 112, "json-ld:contentUrl");
+      if (typeof value === "string") addImageCandidate(candidates, value, pageUrl, 112, "json-ld:image", listingCode);
+      else if (value?.url) addImageCandidate(candidates, value.url, pageUrl, 112, "json-ld:image", listingCode);
+      else if (value?.contentUrl) addImageCandidate(candidates, value.contentUrl, pageUrl, 112, "json-ld:contentUrl", listingCode);
     });
-    if (item?.thumbnailUrl) addImageCandidate(candidates, item.thumbnailUrl, pageUrl, 92, "json-ld:thumbnail");
+    if (item?.thumbnailUrl) addImageCandidate(candidates, item.thumbnailUrl, pageUrl, 92, "json-ld:thumbnail", listingCode);
   }
 
   $("img").each((index, el) => {
     const img = $(el);
+
+    const linkedListing = img.closest('a[href*="/imovel/"]').attr("href") || "";
+    const linkedCode = extractPropertyCode(linkedListing);
+    if (listingCode && linkedCode && linkedCode !== listingCode) return;
+
+    const ancestorText = [
+      img.closest('[class*="similar"]').attr("class"),
+      img.closest('[class*="related"]').attr("class"),
+      img.closest('[class*="recommend"]').attr("class"),
+      img.closest('[class*="card"]').attr("class"),
+    ].filter(Boolean).join(" ").toLowerCase();
+    if (linkedCode && linkedCode !== listingCode) return;
+    if (!linkedCode && /(similar|related|recommend)/i.test(ancestorText)) return;
+
     const width = Number(img.attr("width") || img.attr("data-width") || 0);
     const height = Number(img.attr("height") || img.attr("data-height") || 0);
     const areaBonus = width && height ? Math.min(28, Math.log10(Math.max(1, width * height)) * 4) : 0;
@@ -544,34 +566,22 @@ function collectImageCandidates($, pageUrl, jsonLd = []) {
 
     const baseScore = 54 - Math.min(index, 18) + areaBonus + semanticBonus;
     ["src", "data-src", "data-lazy-src", "data-original", "data-image", "data-url"].forEach((attr) => {
-      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore, "img:" + attr);
+      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore, "img:" + attr, listingCode);
     });
     ["srcset", "data-srcset"].forEach((attr) => {
-      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore + 6, "img:" + attr);
+      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore + 6, "img:" + attr, listingCode);
     });
   });
 
   $('[style*="background"]').each((index, el) => {
-    const style = $(el).attr("style") || "";
-    const matches = [...style.matchAll(/url\((['"]?)(.*?)\1\)/gi)];
-    matches.forEach((match) => addImageCandidate(candidates, match[2], pageUrl, 48 - Math.min(index, 12), "background-image"));
-  });
-
-  $("a[href]").each((index, el) => {
-    const href = $(el).attr("href") || "";
-    if (/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)) {
-      addImageCandidate(candidates, href, pageUrl, 60 - Math.min(index, 20), "link:image");
-    }
-  });
-
-  $("[data-image],[data-src],[data-url],[data-full],[data-large],[data-original]").each((index, el) => {
     const node = $(el);
-    ["data-image","data-src","data-url","data-full","data-large","data-original"].forEach((attr) => {
-      const value = node.attr(attr) || "";
-      if (/https?:\/\/|\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(value)) {
-        addImageCandidate(candidates, value, pageUrl, 52 - Math.min(index, 18), "data:" + attr);
-      }
-    });
+    const linkedListing = node.closest('a[href*="/imovel/"]').attr("href") || "";
+    const linkedCode = extractPropertyCode(linkedListing);
+    if (listingCode && linkedCode && linkedCode !== listingCode) return;
+
+    const style = node.attr("style") || "";
+    const matches = [...style.matchAll(/url\((['"]?)(.*?)\1\)/gi)];
+    matches.forEach((match) => addImageCandidate(candidates, match[2], pageUrl, 48 - Math.min(index, 12), "background-image", listingCode));
   });
 
   return candidates.sort((a, b) => b.score - a.score);
@@ -720,7 +730,8 @@ function extractListingData($, pageUrl) {
 
   const city = cleanText(address.addressLocality || address.addressRegion || "");
   const district = cleanText(address.addressDistrict || address.neighborhood || address.subLocality || "");
-  const imageCandidates = collectImageCandidates($, pageUrl, jsonLd);
+  const listingCode = extractPropertyCode(pageUrl);
+  const imageCandidates = collectImageCandidates($, pageUrl, jsonLd, listingCode);
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
   const featureMap = [
