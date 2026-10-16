@@ -6,9 +6,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Pool } from "pg";
+import sharp from "sharp";
 
 const app = express();
-const APP_BUILD = "villela-gallery-photo-guard-20261016-1348";
+const APP_BUILD = "villela-gallery-visual-dedupe-20261016-1352";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -809,23 +810,72 @@ function readRasterSize(buffer, contentType = "") {
   }
 }
 
-function isLikelyPropertyPhoto(buffer, contentType = "") {
-  const size = readRasterSize(buffer, contentType);
-  if (!size?.width || !size?.height) return false;
+function hammingDistance(a = "", b = "") {
+  if (!a || !b || a.length !== b.length) return Infinity;
+  let distance = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) distance += 1;
+  }
+  return distance;
+}
 
-  const { width, height } = size;
-  const aspect = width / height;
+async function analyzePropertyPhoto(buffer, contentType = "") {
+  try {
+    if (String(contentType || "").toLowerCase().includes("svg")) {
+      return { valid: false, reason: "svg" };
+    }
 
-  // Fotos do anúncio precisam ter resolução mínima e proporção fotográfica.
-  if (width < 420 || height < 240) return false;
-  if (aspect < 0.55 || aspect > 2.25) return false;
+    const image = sharp(buffer, { failOn: "none" });
+    const metadata = await image.metadata();
+    const width = Number(metadata.width || 0);
+    const height = Number(metadata.height || 0);
+    if (!width || !height) return { valid: false, reason: "sem dimensões" };
 
-  return true;
+    const aspect = width / height;
+    if (width < 520 || height < 300) {
+      return { valid: false, reason: "resolução pequena", width, height };
+    }
+    if (aspect < 0.58 || aspect > 2.15) {
+      return { valid: false, reason: "proporção não fotográfica", width, height };
+    }
+
+    const stats = await image.stats();
+    const entropy = Number(stats.entropy || 0);
+    if (entropy < 3.15) {
+      return { valid: false, reason: "baixa entropia / possível logo", width, height, entropy };
+    }
+
+    const pixels = await sharp(buffer, { failOn: "none" })
+      .resize(9, 8, { fit: "fill" })
+      .grayscale()
+      .raw()
+      .toBuffer();
+
+    let hash = "";
+    for (let y = 0; y < 8; y += 1) {
+      for (let x = 0; x < 8; x += 1) {
+        const left = pixels[y * 9 + x];
+        const right = pixels[y * 9 + x + 1];
+        hash += left > right ? "1" : "0";
+      }
+    }
+
+    return {
+      valid: true,
+      width,
+      height,
+      entropy,
+      hash,
+    };
+  } catch (error) {
+    return { valid: false, reason: "falha na análise: " + error.message };
+  }
 }
 
 async function downloadValidImages(candidates, pageUrl, limit = 6) {
   const images = [];
   const buffers = [];
+  const visualHashes = [];
   const usedKeys = new Set();
 
   for (const candidate of candidates.slice(0, 60)) {
@@ -857,20 +907,31 @@ async function downloadValidImages(candidates, pageUrl, limit = 6) {
       if (buffer.length < 12000) continue;
       if (buffer.length > 4000000) continue;
 
-      if (!isLikelyPropertyPhoto(buffer, contentType)) {
-        console.warn("⚠️ Imagem descartada por proporção/tamanho:", candidate.source, candidate.url);
+      const analysis = await analyzePropertyPhoto(buffer, contentType);
+      if (!analysis.valid) {
+        console.warn("⚠️ Imagem descartada:", analysis.reason, candidate.source, candidate.url);
         continue;
       }
 
-      const duplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
-      if (duplicate) continue;
+      const exactDuplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
+      if (exactDuplicate) continue;
+
+      const visualDuplicate = visualHashes.some((hash) => hammingDistance(hash, analysis.hash) <= 7);
+      if (visualDuplicate) {
+        console.log("↩️ Variante repetida da mesma foto ignorada:", candidate.url);
+        continue;
+      }
 
       usedKeys.add(key);
       buffers.push(buffer);
+      visualHashes.push(analysis.hash);
       images.push({
         base64: "data:" + contentType.split(";")[0] + ";base64," + buffer.toString("base64"),
         url: candidate.url,
         source: candidate.source,
+        width: analysis.width,
+        height: analysis.height,
+        entropy: analysis.entropy,
       });
     } catch {}
   }
