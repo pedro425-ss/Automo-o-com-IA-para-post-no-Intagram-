@@ -10,7 +10,7 @@ import sharp from "sharp";
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "crypto";
 
 const app = express();
-const APP_BUILD = "universal-property-extractor-20261016-1555";
+const APP_BUILD = "safe-paid-access-20261016-1625";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +33,27 @@ const pool = process.env.DATABASE_URL
   : null;
 
 const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
+
+const ACCESS_PLANS = {
+  individual: { id: "individual", name: "Individual", price: 59.90, userLimit: 1 },
+  imobiliaria: { id: "imobiliaria", name: "Imobiliária", price: 119.90, userLimit: 5 },
+  equipe: { id: "equipe", name: "Equipe", price: 229.90, userLimit: 10 },
+};
+
+function accessControlEnabled() {
+  return String(process.env.ACCESS_CONTROL_ENABLED || "").toLowerCase() === "true";
+}
+
+function accessControlReady() {
+  return Boolean(accessControlEnabled() && pool && authSecret());
+}
+
+async function optionalAccessGate(req, res, next) {
+  // Fail-open enquanto a monetização ainda estiver em configuração.
+  // Só exige login quando o recurso está explicitamente ligado e tecnicamente pronto.
+  if (!accessControlReady()) return next();
+  return requireAuth(req, res, next);
+}
 let accessTablesPromise = null;
 
 function normalizeEmail(value) {
@@ -346,6 +367,29 @@ app.get("/script.js", (req, res) => {
   }
 });
 
+app.get("/api/access-config", async (req, res) => {
+  const enabled = accessControlEnabled();
+  const ready = accessControlReady();
+  let databaseReady = false;
+
+  if (pool) {
+    try {
+      await ensureAccessTables();
+      databaseReady = true;
+    } catch (error) {
+      console.warn("⚠️ Controle de acesso ainda não pronto:", error.message);
+    }
+  }
+
+  return res.json({
+    enabled,
+    ready: Boolean(ready && databaseReady),
+    active: Boolean(ready && databaseReady),
+    mode: ready && databaseReady ? "paid-access" : "open",
+    plans: Object.values(ACCESS_PLANS),
+  });
+});
+
 app.post("/api/auth/login", async (req, res) => {
   try {
     if (!pool) return res.status(503).json({ erro: "DATABASE_URL ainda não configurada." });
@@ -501,9 +545,8 @@ app.post("/api/admin/organizations", requireAuth, requireSuperAdmin, async (req,
     const ownerName = String(req.body?.ownerName || "").trim().slice(0, 100);
     const ownerEmail = normalizeEmail(req.body?.ownerEmail);
     const password = String(req.body?.password || "");
-    const plan = ["individual","imobiliaria","equipe"].includes(req.body?.plan) ? req.body.plan : "individual";
-    const limits = { individual: 1, imobiliaria: 5, equipe: 10 };
-    const userLimit = Math.max(1, Math.min(100, Number(req.body?.userLimit || limits[plan])));
+    const plan = Object.prototype.hasOwnProperty.call(ACCESS_PLANS, req.body?.plan) ? req.body.plan : "individual";
+    const userLimit = Math.max(1, Math.min(100, Number(req.body?.userLimit || ACCESS_PLANS[plan].userLimit)));
     const days = Math.max(1, Math.min(3650, Number(req.body?.days || 30)));
 
     if (!name || !ownerName || !ownerEmail.includes("@")) return res.status(400).json({ erro: "Preencha imobiliária, responsável e e-mail." });
@@ -1911,7 +1954,7 @@ function extractListingData($, pageUrl) {
   };
 }
 
-app.post("/analisar-imovel", async (req, res) => {
+app.post("/analisar-imovel", optionalAccessGate, async (req, res) => {
   try {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ erro: "URL não enviada" });
