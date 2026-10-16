@@ -236,6 +236,118 @@ function absoluteUrl(candidate, baseUrl) {
   }
 }
 
+
+const listingUrlCache = new Map();
+
+function extractPropertyCode(url) {
+  const match = String(url || "").match(/\/imovel\/(?:[^?#]*\/)?([A-Z]{2,5}\d{2,8}_[A-Z0-9]+)(?:[/?#]|$)/i);
+  return match ? match[1].toUpperCase() : "";
+}
+
+function isVillelaUrl(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    return host === "villelaimoveis.com.br";
+  } catch {
+    return false;
+  }
+}
+
+function extractSitemapLocs(xml) {
+  return [...String(xml || "").matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)]
+    .map((match) => match[1].replace(/&amp;/g, "&").trim())
+    .filter(Boolean);
+}
+
+async function fetchText(url, timeout = 12000) {
+  const response = await axios.get(url, {
+    timeout,
+    maxRedirects: 5,
+    responseType: "text",
+    validateStatus: (status) => status >= 200 && status < 400,
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; ImovelStoryBot/1.0; +https://story-villela.onrender.com)",
+      "Accept": "text/html,application/xhtml+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+      "Cache-Control": "no-cache",
+    },
+  });
+  return {
+    text: typeof response.data === "string" ? response.data : String(response.data || ""),
+    finalUrl: response.request?.res?.responseUrl || url,
+  };
+}
+
+async function resolveVillelaListingUrl(inputUrl) {
+  if (!isVillelaUrl(inputUrl)) return inputUrl;
+
+  const code = extractPropertyCode(inputUrl);
+  if (!code) return inputUrl;
+
+  const cached = listingUrlCache.get(code);
+  if (cached && Date.now() - cached.savedAt < 30 * 60 * 1000) return cached.url;
+
+  // Primeiro tenta descobrir uma URL canônica no próprio HTML curto.
+  try {
+    const initial = await fetchText(inputUrl);
+    const $initial = cheerio.load(initial.text);
+    const canonical = absoluteUrl(
+      $initial('link[rel="canonical"]').attr("href") ||
+      $initial('meta[property="og:url"]').attr("content") ||
+      "",
+      initial.finalUrl
+    );
+    if (canonical && canonical !== inputUrl && canonical.toUpperCase().includes(code)) {
+      listingUrlCache.set(code, { url: canonical, savedAt: Date.now() });
+      return canonical;
+    }
+  } catch (error) {
+    console.warn("⚠️ URL curta da Villela não revelou canonical:", error.message);
+  }
+
+  // Depois procura o código nos sitemaps do domínio.
+  const roots = [
+    "https://www.villelaimoveis.com.br/sitemap.xml",
+    "https://www.villelaimoveis.com.br/sitemap_index.xml",
+    "https://www.villelaimoveis.com.br/sitemap-index.xml",
+  ];
+
+  const visited = new Set();
+  const queue = [...roots];
+
+  while (queue.length && visited.size < 18) {
+    const sitemapUrl = queue.shift();
+    if (!sitemapUrl || visited.has(sitemapUrl)) continue;
+    visited.add(sitemapUrl);
+
+    try {
+      const { text } = await fetchText(sitemapUrl, 10000);
+      const locs = extractSitemapLocs(text);
+
+      const direct = locs.find((loc) =>
+        /\/imovel\//i.test(loc) &&
+        loc.toUpperCase().includes(code)
+      );
+
+      if (direct) {
+        listingUrlCache.set(code, { url: direct, savedAt: Date.now() });
+        console.log("✅ URL Villela resolvida pelo sitemap:", direct);
+        return direct;
+      }
+
+      // Se for um índice de sitemap, visita somente alguns filhos relevantes.
+      const childMaps = locs.filter((loc) => /\.xml(?:$|\?)/i.test(loc));
+      for (const child of childMaps.slice(0, 10)) {
+        if (!visited.has(child)) queue.push(child);
+      }
+    } catch (error) {
+      console.warn("⚠️ Sitemap indisponível:", sitemapUrl, error.message);
+    }
+  }
+
+  return inputUrl;
+}
+
 function flattenJsonLd(value, output = []) {
   if (!value) return output;
   if (Array.isArray(value)) {
@@ -495,15 +607,17 @@ app.post("/analisar-imovel", async (req, res) => {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ erro: "URL não enviada" });
 
-    let pageUrl;
+    let requestedUrl;
     try {
-      pageUrl = new URL(url).href;
+      requestedUrl = new URL(url).href;
     } catch {
       return res.status(400).json({ erro: "URL inválida" });
     }
 
-    console.log("🔎 Buscando imóvel:", pageUrl);
-    const response = await axios.get(pageUrl, {
+    const resolvedUrl = await resolveVillelaListingUrl(requestedUrl);
+    console.log("🔎 Buscando imóvel:", resolvedUrl);
+
+    const response = await axios.get(resolvedUrl, {
       timeout: 18000,
       maxRedirects: 5,
       validateStatus: (status) => status >= 200 && status < 400,
@@ -513,13 +627,52 @@ app.post("/analisar-imovel", async (req, res) => {
         "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
-        "Referer": pageUrl,
+        "Referer": resolvedUrl,
       },
     });
 
-    const finalPageUrl = response.request?.res?.responseUrl || pageUrl;
-    const $ = cheerio.load(response.data);
-    const dados = extractListingData($, finalPageUrl);
+    let finalPageUrl = response.request?.res?.responseUrl || resolvedUrl;
+    let $ = cheerio.load(response.data);
+    let dados = extractListingData($, finalPageUrl);
+
+    // Alguns links curtos retornam uma casca de SPA. Se ela trouxer canonical, refaz a leitura pela página real.
+    const canonical = absoluteUrl(
+      $('link[rel="canonical"]').attr("href") ||
+      $('meta[property="og:url"]').attr("content") ||
+      "",
+      finalPageUrl
+    );
+
+    const hasUsefulData = Boolean(
+      dados.titulo ||
+      dados.preco ||
+      dados.descricao ||
+      dados.area ||
+      dados.cidade ||
+      dados.bairro ||
+      (dados.imagensCandidatas || []).length
+    );
+
+    if (!hasUsefulData && canonical && canonical !== finalPageUrl) {
+      try {
+        const canonicalResponse = await axios.get(canonical, {
+          timeout: 18000,
+          maxRedirects: 5,
+          validateStatus: (status) => status >= 200 && status < 400,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+            "Referer": finalPageUrl,
+          },
+        });
+        finalPageUrl = canonicalResponse.request?.res?.responseUrl || canonical;
+        $ = cheerio.load(canonicalResponse.data);
+        dados = extractListingData($, finalPageUrl);
+      } catch (error) {
+        console.warn("⚠️ Falha ao abrir canonical:", error.message);
+      }
+    }
 
     const downloaded = await downloadFirstValidImage(dados.imagensCandidatas || [], finalPageUrl);
     const publicData = {
@@ -531,14 +684,36 @@ app.post("/analisar-imovel", async (req, res) => {
       descricao: dados.descricao,
       diferenciais: dados.diferenciais,
       imagemUrl: downloaded.url || dados.imagemUrl || "",
+      urlResolvida: finalPageUrl,
     };
 
-    if (!downloaded.base64) {
-      console.warn("⚠️ Imagem não baixada. Candidatas:", (dados.imagensCandidatas || []).slice(0, 5).map((item) => item.url));
-      return res.status(404).json({
-        erro: "Não consegui baixar uma imagem válida deste anúncio.",
+    const foundAnything = Boolean(
+      publicData.titulo ||
+      publicData.preco ||
+      publicData.cidade ||
+      publicData.bairro ||
+      publicData.area ||
+      publicData.descricao ||
+      downloaded.base64 ||
+      publicData.imagemUrl
+    );
+
+    if (!foundAnything) {
+      return res.status(422).json({
+        erro: "A página abriu, mas o site não entregou os dados do imóvel no HTML.",
         dados: publicData,
+        urlResolvida: finalPageUrl,
+      });
+    }
+
+    if (!downloaded.base64) {
+      console.warn("⚠️ Dados encontrados, mas imagem não baixada:", finalPageUrl);
+      return res.status(200).json({
+        ...publicData,
+        dados: publicData,
+        imagem: "",
         imagemUrl: publicData.imagemUrl,
+        aviso: "Encontrei os dados do imóvel, mas não consegui baixar a foto automaticamente.",
         candidatos: (dados.imagensCandidatas || []).slice(0, 8).map(({ url, source }) => ({ url, source })),
       });
     }
