@@ -786,6 +786,29 @@ async function resolveVillelaViaPublicSearch(code) {
   return "";
 }
 
+function isPublicHttpUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    if (!["http:", "https:"].includes(url.protocol)) return false;
+
+    const host = url.hostname.toLowerCase();
+    if (!host || host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) return false;
+
+    if (/^(?:127\.|0\.|169\.254\.|10\.|192\.168\.)/.test(host)) return false;
+
+    const private172 = host.match(/^172\.(\d{1,3})\./);
+    if (private172) {
+      const second = Number(private172[1]);
+      if (second >= 16 && second <= 31) return false;
+    }
+
+    if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80:")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function resolveVillelaListingUrl(inputUrl) {
   if (!isVillelaUrl(inputUrl)) return inputUrl;
 
@@ -1899,7 +1922,14 @@ app.post("/analisar-imovel", requireAuth, async (req, res) => {
       return res.status(400).json({ erro: "URL inválida" });
     }
 
+    if (!isPublicHttpUrl(requestedUrl)) {
+      return res.status(400).json({ erro: "Use um link público http/https de um anúncio imobiliário." });
+    }
+
     const resolvedUrl = await resolveVillelaListingUrl(requestedUrl);
+    if (!isPublicHttpUrl(resolvedUrl)) {
+      return res.status(400).json({ erro: "O link redirecionou para um endereço não público." });
+    }
     console.log("🔎 Buscando imóvel:", resolvedUrl);
 
     const response = await axios.get(resolvedUrl, {
@@ -1938,7 +1968,7 @@ app.post("/analisar-imovel", requireAuth, async (req, res) => {
       (dados.imagensCandidatas || []).length
     );
 
-    if (!hasUsefulData && canonical && canonical !== finalPageUrl) {
+    if (!hasUsefulData && canonical && canonical !== finalPageUrl && isPublicHttpUrl(canonical)) {
       try {
         const canonicalResponse = await axios.get(canonical, {
           timeout: 18000,
