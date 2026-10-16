@@ -54,11 +54,15 @@
     });
 
     document.getElementById("pwa-install-now")?.addEventListener("click", async () => {
-      if (!deferredInstallPrompt) return;
-      deferredInstallPrompt.prompt();
-      try { await deferredInstallPrompt.userChoice; } catch {}
-      deferredInstallPrompt = null;
-      card.classList.remove("is-visible");
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        try { await deferredInstallPrompt.userChoice; } catch {}
+        deferredInstallPrompt = null;
+        card.classList.remove("is-visible");
+        return;
+      }
+
+      alert("No Chrome, toque no menu ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.");
     });
   }
 
@@ -91,5 +95,11 @@
     createInstallCard();
     registerServiceWorker();
     document.documentElement.classList.toggle("pwa-standalone", isStandalone());
+
+    if (!isStandalone() && sessionStorage.getItem("pwa-install-dismissed") !== "1") {
+      setTimeout(() => {
+        document.getElementById("pwa-install-card")?.classList.add("is-visible");
+      }, 1400);
+    }
   });
 })();
