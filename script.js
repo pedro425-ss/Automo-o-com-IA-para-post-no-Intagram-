@@ -179,6 +179,38 @@ document.addEventListener("DOMContentLoaded", () => {
     el?.addEventListener("change", updateImageAndInvalidate);
   });
 
+  // Presets rápidos de enquadramento.
+  document.querySelectorAll(".frame-preset").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextX = button.dataset.x;
+      const nextY = button.dataset.y;
+
+      if (posX && nextX !== undefined) posX.value = String(nextX);
+      if (posY && nextY !== undefined) posY.value = String(nextY);
+
+      posX?.dispatchEvent(new Event("input", { bubbles: true }));
+      posY?.dispatchEvent(new Event("input", { bubbles: true }));
+
+      updateAdjustmentLabels();
+      applyImageSettingsAfterOtherHandlers();
+      invalidateStoryCache();
+    });
+  });
+
+  $("reset-adjustments")?.addEventListener("click", () => {
+    if (zoom) zoom.value = "100";
+    if (posX) posX.value = "50";
+    if (posY) posY.value = "50";
+
+    zoom?.dispatchEvent(new Event("input", { bubbles: true }));
+    posX?.dispatchEvent(new Event("input", { bubbles: true }));
+    posY?.dispatchEvent(new Event("input", { bubbles: true }));
+
+    updateAdjustmentLabels();
+    applyImageSettingsAfterOtherHandlers();
+    invalidateStoryCache();
+  });
+
   updatePreviewText();
   updateAdjustmentLabels();
   applyImageSettingsAfterOtherHandlers();
