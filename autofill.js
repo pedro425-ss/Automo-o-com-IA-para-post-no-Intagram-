@@ -32,19 +32,6 @@
     return true;
   }
 
-  function applyFeatures(features) {
-    if (!Array.isArray(features) || !features.length) return;
-
-    const wanted = features.map(normalize);
-    document.querySelectorAll(".feature").forEach((checkbox) => {
-      const shouldCheck = wanted.includes(normalize(checkbox.value));
-      if (shouldCheck && !checkbox.checked) {
-        checkbox.checked = true;
-        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
-  }
-
   function applyListingData(data) {
     let count = 0;
     if (setField("title", data.titulo)) count++;
@@ -53,8 +40,6 @@
     if (setField("district", data.bairro)) count++;
     if (setField("area", data.area)) count++;
     if (setField("description", data.descricao)) count++;
-
-    applyFeatures(data.diferenciais);
 
     const storyImage = $("story-image-preview");
     const imageSource =
