@@ -203,7 +203,7 @@
     if ($("realty-profile-panel")) return;
     const templatePanel = $("story-template-panel");
     const editorPanel = document.querySelector(".panel");
-    if (!templatePanel || !editorPanel) return;
+    if (!editorPanel) return;
 
     const profilePanel = document.createElement("div");
     profilePanel.id = "realty-profile-panel";
@@ -273,8 +273,8 @@
     `;
 
     const urlSection = [...editorPanel.querySelectorAll(".section")].find((section) => section.querySelector("#imovel-url"));
-    if (urlSection) urlSection.insertAdjacentElement("afterend", profilePanel);
-    else templatePanel.insertAdjacentElement("beforebegin", profilePanel);
+    if (!urlSection) return;
+    urlSection.insertAdjacentElement("afterend", profilePanel);
 
     $("realty-market").value = read(MARKET_KEY, "urbano");
     $("realty-position").value = read(POSITION_KEY, "tradicional");
@@ -387,17 +387,32 @@
   document.addEventListener("DOMContentLoaded", () => {
     injectStyles();
 
-    const waitForTemplates = () => {
-      if (!$("story-template-panel")) {
-        setTimeout(waitForTemplates, 40);
+    const waitForProfileHost = () => {
+      const editorPanel = document.querySelector(".panel");
+      const urlSection = editorPanel && [...editorPanel.querySelectorAll(".section")].find((section) => section.querySelector("#imovel-url"));
+      if (!editorPanel || !urlSection) {
+        setTimeout(waitForProfileHost, 40);
         return;
       }
+
       buildUi();
-      bindTemplateChanges();
+      if ($("story-template-panel")) bindTemplateChanges();
       applyProfile({ updateBadge: false });
+
+      if (!$("story-template-panel")) {
+        const waitForTemplates = () => {
+          if (!$("story-template-panel")) {
+            setTimeout(waitForTemplates, 80);
+            return;
+          }
+          bindTemplateChanges();
+          applyProfile({ updateBadge: false });
+        };
+        waitForTemplates();
+      }
     };
 
-    waitForTemplates();
+    waitForProfileHost();
   });
 
   window.applyRealtyProfile = applyProfile;
