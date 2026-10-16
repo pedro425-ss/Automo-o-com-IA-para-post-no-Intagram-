@@ -62,6 +62,7 @@
 
   function currentSettings() {
     return {
+      brandName: $("brand-name")?.value || "",
       contact: $("contact")?.value || "",
       logoSize: Number($("logo-size")?.value || 200),
       logoPosition: $("logo-position")?.value || "top-left",
@@ -80,7 +81,7 @@
       wrapper?.classList.remove("hidden");
     }
 
-    [["contact", profile.contact], ["logo-size", profile.logoSize], ["logo-position", profile.logoPosition], ["content-y", profile.contentY], ["more-photos-url", profile.morePhotosUrl]].forEach(([id, value]) => {
+    [["brand-name", profile.name || profile.brandName], ["contact", profile.contact], ["logo-size", profile.logoSize], ["logo-position", profile.logoPosition], ["content-y", profile.contentY], ["more-photos-url", profile.morePhotosUrl]].forEach(([id, value]) => {
       const el = $(id);
       if (!el || value === undefined || value === null || value === "") return;
       el.value = String(value);
@@ -168,13 +169,17 @@
     return json;
   }
 
-  function profilePayload(id, name, logoData) { return { id, name, logoData, ...currentSettings() }; }
+  function profilePayload(id, name, logoData) {
+    const settings = currentSettings();
+    return { id, name: name || settings.brandName || "Minha Imobiliária", logoData, ...settings };
+  }
 
   async function saveCurrent() {
     const img = $("story-logo-preview");
     if (!img?.src || img.classList.contains("hidden")) throw new Error("Escolha ou envie um logo antes de salvar o perfil.");
     const nameInput = $("logo-library-name");
-    const name = nameInput?.value?.trim() || prompt("Nome da imobiliária:", "")?.trim();
+    const brandName = $("brand-name")?.value?.trim() || "";
+    const name = brandName || nameInput?.value?.trim() || prompt("Nome da imobiliária:", "")?.trim();
     if (!name) return;
     const id = `imob-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     await api("", { method: "POST", body: JSON.stringify(profilePayload(id, name, img.src)) });
