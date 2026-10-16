@@ -254,6 +254,7 @@
         body.desktop-wizard-active .btn-dark{background:#171d22!important;color:white!important}
 
         #desktop-preview-mount{
+          display:block!important;
           position:sticky!important;top:18px!important;align-self:start!important;
           width:100%!important;max-width:360px!important;min-width:0!important;
           min-height:0!important;height:auto!important;padding:14px!important;
@@ -296,7 +297,9 @@
           max-width:100%!important;
         }
         #desktop-preview-mount .story-preview-stage{
+          position:absolute!important;left:0!important;top:0!important;
           width:1080px!important;height:1920px!important;
+          margin:0!important;padding:0!important;
           transform-origin:top left!important;
         }
 
