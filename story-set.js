@@ -84,29 +84,67 @@
         border:2px solid rgba(255,255,255,.16);
         box-shadow:0 9px 28px rgba(0,0,0,.22);
       }
-      .story-gallery-mode .story-description{
-        margin-bottom:22px;
-        max-height:105px;
-        font-size:32px;
+      .story-showcase-mode .story-content{
+        bottom:70px!important;
+        left:52px!important;
+        right:52px!important;
+        padding:26px 30px!important;
+        border-radius:28px!important;
+        background:rgba(7,11,16,.70)!important;
+        border:1px solid rgba(255,255,255,.12)!important;
+        backdrop-filter:blur(8px);
       }
-      .story-gallery-mode .story-features{
-        margin-bottom:20px;
+      .story-showcase-mode .story-title{
+        font-size:56px!important;
+        line-height:1.06!important;
+        margin-bottom:12px!important;
       }
-      .story-gallery-mode .story-features span{
-        font-size:21px;
-        padding:8px 13px;
+      .story-showcase-mode .story-price,
+      .story-showcase-mode .story-description,
+      .story-showcase-mode .story-cta,
+      .story-showcase-mode .story-qr-card,
+      .story-showcase-mode .story-gallery-grid{
+        display:none!important;
       }
-      .story-gallery-mode .story-title{
-        font-size:66px;
-        margin-bottom:18px;
+      .story-showcase-mode .story-meta{
+        font-size:27px!important;
+        margin-bottom:0!important;
       }
-      .story-gallery-mode .story-price{
-        font-size:54px;
-        margin-bottom:22px;
+
+      .story-contact-mode .story-content{
+        bottom:72px!important;
+        left:52px!important;
+        right:52px!important;
+        padding:28px 30px!important;
+        border-radius:30px!important;
+        background:rgba(7,11,16,.78)!important;
+        border:1px solid rgba(255,255,255,.12)!important;
+        backdrop-filter:blur(8px);
       }
-      .story-gallery-mode .story-meta{
-        margin-bottom:22px;
+      .story-contact-mode .story-title{
+        font-size:54px!important;
+        line-height:1.06!important;
+        margin-bottom:10px!important;
       }
+      .story-contact-mode .story-price{
+        font-size:49px!important;
+        margin-bottom:14px!important;
+      }
+      .story-contact-mode .story-description,
+      .story-contact-mode .story-qr-card,
+      .story-contact-mode .story-gallery-grid{
+        display:none!important;
+      }
+      .story-contact-mode .story-meta{
+        font-size:25px!important;
+        margin-bottom:16px!important;
+      }
+      .story-contact-mode .story-cta{
+        padding:18px 22px!important;
+        border-radius:20px!important;
+      }
+      .story-contact-mode .story-cta-title{font-size:23px!important;margin-bottom:3px!important}
+      .story-contact-mode .story-contact{font-size:29px!important}
       @media(max-width:899px){
         .story-set-actions{grid-template-columns:1fr}
         .story-set-actions .btn{min-height:50px}
@@ -296,7 +334,7 @@
       storySetBox.className = "story-set-box";
       storySetBox.innerHTML = `
         <div class="story-set-title">Pacote de Stories</div>
-        <div class="story-set-copy">Use as fotos encontradas no link do imóvel ou selecione várias fotos manualmente. O sistema gera uma capa, uma galeria e um Story final de contato.</div>
+        <div class="story-set-copy">Use as fotos encontradas no link do imóvel ou selecione várias fotos manualmente. O sistema gera um anúncio principal, uma segunda foto em destaque e um Story final de contato.</div>
         <div class="story-set-actions">
           <button id="build-story-set" class="btn btn-green" type="button">Gerar 3 Stories</button>
           <button id="download-story-set" class="btn btn-gold" type="button">Baixar 3 PNGs</button>
@@ -357,16 +395,17 @@
 
     function buildSlides() {
       const base = getBaseData();
-      const images = uploadedImages.length
+      const sourceImages = uploadedImages.length
         ? uploadedImages
         : listingImages.length
           ? listingImages
           : (storyImage.src ? [storyImage.src] : []);
 
+      const images = [...new Set(sourceImages.filter(Boolean))];
       if (!images.length) return [];
 
-      const gallery = images.slice(0, 4);
-      while (gallery.length < 4 && images[0]) gallery.push(images[gallery.length % images.length] || images[0]);
+      const secondImage = images[1] || images[0];
+      const thirdImage = images[2] || images[1] || images[0];
 
       return [
         {
@@ -378,30 +417,28 @@
           location: base.location,
           area: base.area,
           description: base.description,
-          features: base.features.slice(0, 4)
+          contact: base.contact
         },
         {
-          type: "gallery",
-          image: images[1] || images[0],
-          badge: "MAIS FOTOS",
+          type: "showcase",
+          image: secondImage,
+          badge: "CONHEÇA O IMÓVEL",
           title: base.title,
-          price: "Veja por dentro",
+          price: "",
           location: base.location,
           area: base.area,
-          description: "Confira alguns detalhes deste imóvel.",
-          features: base.features.slice(0, 3),
-          gallery
+          description: "",
+          contact: base.contact
         },
         {
           type: "contact",
-          image: images[2] || images[1] || images[0],
-          badge: "FALE CONOSCO",
+          image: thirdImage,
+          badge: "AGENDE SUA VISITA",
           title: base.title,
-          price: "Agende sua visita",
+          price: base.price,
           location: base.location,
           area: base.area,
-          description: "Entre em contato para receber mais informações, fotos e condições deste imóvel.",
-          features: base.features.slice(0, 3),
+          description: "",
           contact: base.contact
         }
       ];
@@ -447,17 +484,11 @@
           .join("");
       }
 
-      story.classList.toggle("story-gallery-mode", slide.type === "gallery");
+      story.classList.toggle("story-showcase-mode", slide.type === "showcase");
+      story.classList.toggle("story-contact-mode", slide.type === "contact");
 
-      if (slide.type === "gallery" && slide.gallery?.length) {
-        galleryGrid.innerHTML = slide.gallery
-          .map((src, imageIndex) => `<img src="${src}" alt="Foto ${imageIndex + 1} do imóvel" />`)
-          .join("");
-        galleryGrid.classList.remove("hidden");
-      } else {
-        galleryGrid.innerHTML = "";
-        galleryGrid.classList.add("hidden");
-      }
+      galleryGrid.innerHTML = "";
+      galleryGrid.classList.add("hidden");
 
       await setStoryImage(slide.image);
 
