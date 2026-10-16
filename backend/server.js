@@ -36,7 +36,7 @@ const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const ACCESS_PLANS = {
   individual: { id: "individual", name: "Individual", price: 59.90, userLimit: 1 },
-  imobiliaria: { id: "imobiliaria", name: "Imobiliária", price: 119.90, userLimit: 5 },
+  imobiliaria: { id: "imobiliaria", name: "Imobiliária", price: 250.00, userLimit: 3 },
   equipe: { id: "equipe", name: "Equipe", price: 229.90, userLimit: 10 },
 };
 
