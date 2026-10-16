@@ -296,7 +296,7 @@
       storySetBox.className = "story-set-box";
       storySetBox.innerHTML = `
         <div class="story-set-title">Pacote de Stories</div>
-        <div class="story-set-copy">Selecione várias fotos e gere automaticamente uma capa, uma galeria e um Story final de contato.</div>
+        <div class="story-set-copy">Use as fotos encontradas no link do imóvel ou selecione várias fotos manualmente. O sistema gera uma capa, uma galeria e um Story final de contato.</div>
         <div class="story-set-actions">
           <button id="build-story-set" class="btn btn-green" type="button">Gerar 3 Stories</button>
           <button id="download-story-set" class="btn btn-gold" type="button">Baixar 3 PNGs</button>
@@ -317,8 +317,21 @@
     const status = $("story-set-status");
 
     let uploadedImages = [];
+    let listingImages = Array.isArray(window.__listingImages) ? window.__listingImages.slice(0, 8) : [];
     let slides = [];
     let activeIndex = 0;
+
+    window.addEventListener("listing-images-loaded", (event) => {
+      const images = Array.isArray(event.detail?.images) ? event.detail.images.filter(Boolean) : [];
+      listingImages = images.slice(0, 8);
+      if (!uploadedImages.length && status) {
+        status.textContent = listingImages.length > 1
+          ? `${listingImages.length} fotos do anúncio encontradas. Clique em “Gerar 3 Stories”.`
+          : "1 foto do anúncio encontrada.";
+      }
+      slides = [];
+      nav?.classList.add("hidden");
+    });
 
     function getFeatures() {
       return [...document.querySelectorAll(".feature")]
@@ -346,7 +359,9 @@
       const base = getBaseData();
       const images = uploadedImages.length
         ? uploadedImages
-        : (storyImage.src ? [storyImage.src] : []);
+        : listingImages.length
+          ? listingImages
+          : (storyImage.src ? [storyImage.src] : []);
 
       if (!images.length) return [];
 
