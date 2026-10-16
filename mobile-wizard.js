@@ -45,9 +45,9 @@
         body.mobile-wizard-active .panel-subtitle{font-size:10px!important;line-height:1.2!important;margin-top:2px!important}
 
         body.mobile-wizard-active .panel>.section.mobile-step-active{
-          margin-top:5px!important;
-          padding:8px!important;
-          border-radius:12px!important;
+          margin-top:4px!important;
+          padding:7px!important;
+          border-radius:11px!important;
         }
 
         body.mobile-wizard-active .workflow-panel,
@@ -117,16 +117,16 @@
         body.mobile-wizard-active .input,
         body.mobile-wizard-active .select,
         body.mobile-wizard-active .file{
-          min-height:40px!important;
-          height:40px!important;
-          padding:8px 10px!important;
-          font-size:14px!important;
+          min-height:38px!important;
+          height:38px!important;
+          padding:7px 9px!important;
+          font-size:13px!important;
           border-radius:10px!important;
         }
         body.mobile-wizard-active .textarea{
-          min-height:66px!important;
-          padding:8px 10px!important;
-          font-size:14px!important;
+          min-height:56px!important;
+          padding:7px 9px!important;
+          font-size:13px!important;
           border-radius:10px!important;
         }
         body.mobile-wizard-active .hint,
@@ -212,9 +212,69 @@
 
   function getStepForSection(section) {
     if (section.querySelector("#imovel-url")) return 1;
-    if (section.querySelector("#badge") || section.querySelector("#title")) return 2;
-    if (section.id === "adjustment-section" || section.id === "story-advanced-section" || section.querySelector("#image-upload-story") || section.querySelector("#logo-upload-story")) return 3;
-    return 4;
+
+    if (section.querySelector("#badge") || section.querySelector("#title") || section.querySelector("#price") || section.querySelector("#city") || section.querySelector("#district") || section.querySelector("#area")) {
+      return 2;
+    }
+
+    if (section.querySelector("#description") || section.querySelector("#contact")) {
+      return 3;
+    }
+
+    if (section.id === "adjustment-section" || section.id === "mobile-image-section" || section.querySelector("#image-upload-story")) {
+      return 4;
+    }
+
+    if (section.id === "story-advanced-section" || section.id === "mobile-logo-section" || section.querySelector("#logo-upload-story")) {
+      return 5;
+    }
+
+    return 6;
+  }
+
+  function splitDataSectionForMobile() {
+    const original = [...document.querySelectorAll(".panel>.section")].find((section) => section.querySelector("#title") && section.querySelector("#description"));
+    if (!original || original.dataset.mobileSplitDone === "true") return;
+
+    const descriptionField = document.getElementById("description")?.closest(".field");
+    const contactField = document.getElementById("contact")?.closest(".field");
+    if (!descriptionField && !contactField) return;
+
+    const detailSection = document.createElement("div");
+    detailSection.className = "section";
+    detailSection.id = "mobile-description-section";
+    detailSection.innerHTML = '<div class="section-title">Descrição e contato</div>';
+
+    if (descriptionField) detailSection.appendChild(descriptionField);
+    if (contactField) detailSection.appendChild(contactField);
+
+    original.insertAdjacentElement("afterend", detailSection);
+    original.dataset.mobileSplitDone = "true";
+  }
+
+  function splitImagesSectionForMobile() {
+    const original = [...document.querySelectorAll(".panel>.section")].find((section) => section.querySelector("#image-upload-story") && section.querySelector("#logo-upload-story"));
+    if (!original || original.dataset.mobileSplitDone === "true") return;
+
+    const imageField = document.getElementById("image-upload-story")?.closest(".field");
+    const logoField = document.getElementById("logo-upload-story")?.closest(".field");
+    if (!imageField || !logoField) return;
+
+    const imageSection = document.createElement("div");
+    imageSection.className = "section";
+    imageSection.id = "mobile-image-section";
+    imageSection.innerHTML = '<div class="section-title">Imagem do imóvel</div>';
+    imageSection.appendChild(imageField);
+
+    const logoSection = document.createElement("div");
+    logoSection.className = "section";
+    logoSection.id = "mobile-logo-section";
+    logoSection.innerHTML = '<div class="section-title">Logo</div>';
+    logoSection.appendChild(logoField);
+
+    original.insertAdjacentElement("afterend", imageSection);
+    imageSection.insertAdjacentElement("afterend", logoSection);
+    original.remove();
   }
 
   function classifySections() {
@@ -234,9 +294,9 @@
     progress.innerHTML = `
       <div class="mobile-wizard-progress-row">
         <div id="mobile-wizard-step-title" class="mobile-wizard-step-title">Imóvel</div>
-        <div id="mobile-wizard-step-count" class="mobile-wizard-step-count">Etapa 1 de 4</div>
+        <div id="mobile-wizard-step-count" class="mobile-wizard-step-count">Etapa 1 de 6</div>
       </div>
-      <div class="mobile-wizard-track"><span id="mobile-wizard-track-fill" style="width:25%"></span></div>
+      <div class="mobile-wizard-track"><span id="mobile-wizard-track-fill" style="width:16.6667%"></span></div>
     `;
     const header = panel.querySelector(".panel-header");
     if (header?.nextSibling) panel.insertBefore(progress, header.nextSibling);
@@ -350,22 +410,26 @@
   }
 
   function setStep(step) {
-    currentStep = Math.max(1, Math.min(4, step));
+    currentStep = Math.max(1, Math.min(6, step));
     classifySections();
     document.querySelectorAll(".panel>.section[data-mobile-step]").forEach((section) => {
       section.classList.toggle("mobile-step-active", Number(section.dataset.mobileStep) === currentStep);
     });
-    const titles = ["Imóvel", "Conteúdo", "Visual", "Publicação"];
+    const titles = ["Buscar imóvel", "Dados principais", "Descrição", "Imagem", "Logo e QR", "Publicação"];
     const title = document.getElementById("mobile-wizard-step-title");
     const count = document.getElementById("mobile-wizard-step-count");
     const fill = document.getElementById("mobile-wizard-track-fill");
     const back = document.getElementById("mobile-wizard-back");
     const next = document.getElementById("mobile-wizard-next");
     if (title) title.textContent = titles[currentStep - 1];
-    if (count) count.textContent = `Etapa ${currentStep} de 4`;
-    if (fill) fill.style.width = `${currentStep * 25}%`;
+    if (count) count.textContent = `Etapa ${currentStep} de 6`;
+    if (fill) fill.style.width = `${currentStep * (100 / 6)}%`;
     if (back) back.disabled = currentStep === 1;
-    if (next) next.style.display = currentStep === 4 ? "none" : "";
+    if (next) {
+      next.style.display = currentStep === 6 ? "none" : "";
+      const labels = ["Dados", "Descrição", "Imagem", "Logo e QR", "Publicar"];
+      next.textContent = labels[currentStep - 1] || "Próximo";
+    }
 
     const secondaryToggle = document.getElementById("mobile-secondary-toggle");
     if (secondaryToggle) secondaryToggle.style.display = currentStep === 1 ? "" : "none";
@@ -386,6 +450,8 @@
       const panel = document.querySelector(".panel");
       if (!panel) return;
       injectStyles();
+      splitDataSectionForMobile();
+      splitImagesSectionForMobile();
       classifySections();
       createProgress(panel);
       createSecondaryToggle(panel);
