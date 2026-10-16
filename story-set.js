@@ -85,66 +85,83 @@
         box-shadow:0 9px 28px rgba(0,0,0,.22);
       }
       .story-showcase-mode .story-content{
-        bottom:70px!important;
-        left:52px!important;
-        right:52px!important;
-        padding:26px 30px!important;
-        border-radius:28px!important;
-        background:rgba(7,11,16,.70)!important;
-        border:1px solid rgba(255,255,255,.12)!important;
+        left:46px!important;
+        right:46px!important;
+        bottom:54px!important;
+        padding:22px 24px!important;
+        border-radius:24px!important;
+        background:rgba(8,12,17,.58)!important;
+        border:1px solid rgba(255,255,255,.14)!important;
         backdrop-filter:blur(8px);
       }
       .story-showcase-mode .story-title{
-        font-size:56px!important;
-        line-height:1.06!important;
-        margin-bottom:12px!important;
+        font-size:48px!important;
+        line-height:1.04!important;
+        margin:0 0 8px 0!important;
+        max-height:102px!important;
+        overflow:hidden!important;
       }
       .story-showcase-mode .story-price,
       .story-showcase-mode .story-description,
       .story-showcase-mode .story-cta,
       .story-showcase-mode .story-qr-card,
-      .story-showcase-mode .story-gallery-grid{
+      .story-showcase-mode .story-gallery-grid,
+      .story-showcase-mode .story-footer{
         display:none!important;
       }
       .story-showcase-mode .story-meta{
-        font-size:27px!important;
-        margin-bottom:0!important;
+        font-size:24px!important;
+        line-height:1.2!important;
+        margin:0!important;
+      }
+      .story-showcase-mode .story-badge{
+        font-size:24px!important;
+        padding:12px 20px!important;
+        margin-bottom:12px!important;
       }
 
       .story-contact-mode .story-content{
-        bottom:72px!important;
-        left:52px!important;
-        right:52px!important;
-        padding:28px 30px!important;
-        border-radius:30px!important;
-        background:rgba(7,11,16,.78)!important;
-        border:1px solid rgba(255,255,255,.12)!important;
+        left:46px!important;
+        right:46px!important;
+        bottom:54px!important;
+        padding:24px 26px!important;
+        border-radius:24px!important;
+        background:rgba(8,12,17,.72)!important;
+        border:1px solid rgba(255,255,255,.14)!important;
         backdrop-filter:blur(8px);
       }
       .story-contact-mode .story-title{
-        font-size:54px!important;
-        line-height:1.06!important;
-        margin-bottom:10px!important;
+        font-size:46px!important;
+        line-height:1.04!important;
+        margin:0 0 8px 0!important;
+        max-height:96px!important;
+        overflow:hidden!important;
       }
       .story-contact-mode .story-price{
-        font-size:49px!important;
-        margin-bottom:14px!important;
+        font-size:42px!important;
+        margin:0 0 10px 0!important;
       }
       .story-contact-mode .story-description,
       .story-contact-mode .story-qr-card,
-      .story-contact-mode .story-gallery-grid{
+      .story-contact-mode .story-gallery-grid,
+      .story-contact-mode .story-footer{
         display:none!important;
       }
       .story-contact-mode .story-meta{
-        font-size:25px!important;
-        margin-bottom:16px!important;
+        font-size:22px!important;
+        margin:0 0 12px 0!important;
       }
       .story-contact-mode .story-cta{
-        padding:18px 22px!important;
-        border-radius:20px!important;
+        padding:14px 18px!important;
+        border-radius:18px!important;
       }
-      .story-contact-mode .story-cta-title{font-size:23px!important;margin-bottom:3px!important}
-      .story-contact-mode .story-contact{font-size:29px!important}
+      .story-contact-mode .story-cta-title{font-size:19px!important;margin-bottom:2px!important}
+      .story-contact-mode .story-contact{font-size:25px!important}
+      .story-contact-mode .story-badge{
+        font-size:22px!important;
+        padding:11px 18px!important;
+        margin-bottom:10px!important;
+      }
       @media(max-width:899px){
         .story-set-actions{grid-template-columns:1fr}
         .story-set-actions .btn{min-height:50px}
@@ -334,7 +351,7 @@
       storySetBox.className = "story-set-box";
       storySetBox.innerHTML = `
         <div class="story-set-title">Pacote de Stories</div>
-        <div class="story-set-copy">Use as fotos encontradas no link do imóvel ou selecione várias fotos manualmente. O sistema gera um anúncio principal, uma segunda foto em destaque e um Story final de contato.</div>
+        <div class="story-set-copy">Gere 3 versões do mesmo anúncio automaticamente. Para usar fotos diferentes com segurança, selecione várias fotos manualmente.</div>
         <div class="story-set-actions">
           <button id="build-story-set" class="btn btn-green" type="button">Gerar 3 Stories</button>
           <button id="download-story-set" class="btn btn-gold" type="button">Baixar 3 PNGs</button>
@@ -363,9 +380,7 @@
       const images = Array.isArray(event.detail?.images) ? event.detail.images.filter(Boolean) : [];
       listingImages = images.slice(0, 8);
       if (!uploadedImages.length && status) {
-        status.textContent = listingImages.length > 1
-          ? `${listingImages.length} fotos do anúncio encontradas. Clique em “Gerar 3 Stories”.`
-          : "1 foto do anúncio encontrada.";
+        status.textContent = "Foto principal do anúncio carregada com segurança. Para variar as fotos, selecione várias imagens manualmente."
       }
       slides = [];
       nav?.classList.add("hidden");
@@ -395,29 +410,29 @@
 
     function buildSlides() {
       const base = getBaseData();
-      const sourceImages = uploadedImages.length
-        ? uploadedImages
-        : listingImages.length
-          ? listingImages
-          : (storyImage.src ? [storyImage.src] : []);
 
-      const images = [...new Set(sourceImages.filter(Boolean))];
-      if (!images.length) return [];
+      // Fotos selecionadas manualmente são confiáveis e podem variar entre os Stories.
+      // Fotos vindas automaticamente do site só usam a capa confirmada até a galeria
+      // secundária poder ser validada com segurança.
+      const manualImages = uploadedImages.filter(Boolean);
+      const mainImage = manualImages[0] || storyImage.src || listingImages[0] || "";
+      if (!mainImage) return [];
 
-      const secondImage = images[1] || images[0];
-      const thirdImage = images[2] || images[1] || images[0];
+      const secondImage = manualImages[1] || mainImage;
+      const thirdImage = manualImages[2] || manualImages[1] || mainImage;
 
       return [
         {
           type: "cover",
-          image: images[0],
+          image: mainImage,
           badge: base.badge,
           title: base.title,
           price: base.price,
           location: base.location,
           area: base.area,
           description: base.description,
-          contact: base.contact
+          contact: base.contact,
+          frame: { x: 50, y: 42, zoom: 100 }
         },
         {
           type: "showcase",
@@ -428,7 +443,8 @@
           location: base.location,
           area: base.area,
           description: "",
-          contact: base.contact
+          contact: base.contact,
+          frame: { x: 50, y: 34, zoom: 108 }
         },
         {
           type: "contact",
@@ -439,7 +455,8 @@
           location: base.location,
           area: base.area,
           description: "",
-          contact: base.contact
+          contact: base.contact,
+          frame: { x: 50, y: 54, zoom: 104 }
         }
       ];
     }
@@ -494,8 +511,15 @@
 
       const posX = $("pos-x");
       const posY = $("pos-y");
+      const zoom = $("zoom");
+      if (slide.frame) {
+        if (posX) posX.value = String(slide.frame.x ?? 50);
+        if (posY) posY.value = String(slide.frame.y ?? 50);
+        if (zoom) zoom.value = String(slide.frame.zoom ?? 100);
+      }
       if (posX) posX.dispatchEvent(new Event("input", { bubbles: true }));
       if (posY) posY.dispatchEvent(new Event("input", { bubbles: true }));
+      if (zoom) zoom.dispatchEvent(new Event("input", { bubbles: true }));
 
       setActiveTab(index);
       if (status) status.textContent = `Visualizando Story ${index + 1} de ${slides.length}.`;
