@@ -102,6 +102,19 @@ app.get("/adjustments.js", (req, res) => sendFrontendFile(res, "adjustments.js")
 app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
 app.get("/autofill.js", (req, res) => sendFrontendFile(res, "autofill.js"));
 app.get("/mobile-wizard.js", (req, res) => sendFrontendFile(res, "mobile-wizard.js"));
+app.get("/pwa.js", (req, res) => sendFrontendFile(res, "pwa.js"));
+app.get("/manifest.webmanifest", (req, res) => {
+  disableFrontendCache(res);
+  res.type("application/manifest+json; charset=utf-8");
+  return res.sendFile(path.join(frontendDir, "manifest.webmanifest"));
+});
+app.get("/sw.js", (req, res) => {
+  res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.type("application/javascript; charset=utf-8");
+  return res.sendFile(path.join(frontendDir, "sw.js"));
+});
+app.get("/pwa-icon-192.svg", (req, res) => sendFrontendFile(res, "pwa-icon-192.svg"));
+app.get("/pwa-icon-512.svg", (req, res) => sendFrontendFile(res, "pwa-icon-512.svg"));
 
 app.get("/script.js", (req, res) => {
   disableFrontendCache(res);
