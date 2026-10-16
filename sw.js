@@ -5,7 +5,8 @@ const APP_SHELL = [
   "/script.js",
   "/autofill.js?v=3",
   "/brand-theme.js?v=4",
-  "/mobile-wizard.js?v=5",
+  "/mobile-wizard.js?v=6",
+  "/realty-profile.js?v=1",
   "/manifest.webmanifest",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png"
