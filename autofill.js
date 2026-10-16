@@ -47,9 +47,17 @@
     applyFeatures(data.diferenciais);
 
     const storyImage = $("story-image-preview");
-    if (storyImage && data.imagem) {
-      storyImage.crossOrigin = "anonymous";
-      storyImage.src = data.imagem;
+    const imageSource =
+      data.imagem ||
+      data.imageBase64 ||
+      data.image ||
+      data.imageUrl ||
+      data.imagemUrl ||
+      (Array.isArray(data.images) ? data.images[0] : "");
+
+    if (storyImage && imageSource) {
+      if (!String(imageSource).startsWith("data:")) storyImage.crossOrigin = "anonymous";
+      storyImage.src = imageSource;
       storyImage.classList.remove("hidden");
       count++;
     }
@@ -94,7 +102,17 @@
           const data = json.dados
             ? {
                 ...json.dados,
-                imagem: json.imagem || "",
+                imagem:
+                  json.imagem ||
+                  json.imageBase64 ||
+                  json.image ||
+                  json.dados?.imagem ||
+                  "",
+                imagemUrl:
+                  json.imagemUrl ||
+                  json.imageUrl ||
+                  json.dados?.imagemUrl ||
+                  "",
               }
             : json;
 
@@ -105,7 +123,10 @@
               alert("Consegui preencher alguns dados, mas não encontrei a imagem principal.");
               return;
             }
-            throw new Error(json.erro || "Não foi possível analisar este anúncio.");
+            const candidateHint = Array.isArray(json.candidatos) && json.candidatos.length
+              ? " O site respondeu com imagens candidatas, mas bloqueou o download automático."
+              : "";
+            throw new Error((json.erro || "Não foi possível analisar este anúncio.") + candidateHint);
           }
 
           if (!applied) {
@@ -114,7 +135,7 @@
           }
 
           const found = [];
-          if (data.imagem) found.push("foto");
+          if (data.imagem || data.imagemUrl || data.imageUrl) found.push("foto");
           if (data.titulo) found.push("título");
           if (data.preco) found.push("preço");
           if (data.cidade || data.bairro) found.push("localização");
