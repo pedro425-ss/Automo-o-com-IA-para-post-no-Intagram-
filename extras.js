@@ -61,7 +61,7 @@
       .story-extra-btn{min-height:44px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.06);color:white;font-size:12px;font-weight:800;cursor:pointer}
       .story-extra-btn:active{background:rgba(200,139,58,.22)}
 
-      .story-qr-card{display:none;align-items:center;justify-content:space-between;gap:24px;width:100%;margin:0 0 24px;padding:20px 22px;border-radius:30px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);cursor:pointer;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+      .story-qr-card{display:none;align-items:center;justify-content:space-between;gap:24px;width:100%;margin:0 0 24px;padding:20px 22px;border-radius:30px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);cursor:pointer;transition:transform .15s ease,background .15s ease,border-color .15s ease;text-decoration:none;color:inherit;position:relative;z-index:40;pointer-events:auto!important}
       .story-qr-card:hover{transform:translateY(-2px);background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.26)}
       .story-qr-card:focus-visible{outline:3px solid rgba(255,255,255,.72);outline-offset:4px}
       .story-qr-card.is-visible{display:flex}
@@ -150,8 +150,10 @@
     const cta = content?.querySelector(".story-cta");
     if (!content || !cta) return null;
 
-    card = document.createElement("div");
+    card = document.createElement("a");
     card.id = "story-qr-card";
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
     card.className = "story-qr-card";
     card.setAttribute("role", "link");
     card.setAttribute("tabindex", "0");
@@ -365,6 +367,7 @@
       if (img) img.src = qr.toDataURL("image/png");
       if (linkText) linkText.textContent = getDisplayUrl(url);
       card.dataset.href = url;
+      card.href = url;
       card.title = "Abrir " + getDisplayUrl(url);
       card.classList.add("is-visible");
       if (status) status.textContent = "QR Code pronto e incluído no PNG.";
@@ -453,18 +456,8 @@
     byId("show-qr")?.addEventListener("change", updateQrCard);
 
     const qrCard = byId("story-qr-card");
-    const openQrLink = () => {
-      const href = qrCard?.dataset.href || "";
-      if (!href) return;
-      window.open(href, "_blank", "noopener,noreferrer");
-    };
-    qrCard?.addEventListener("click", openQrLink);
-    qrCard?.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openQrLink();
-      }
-    });
+    // O card agora é um link real (<a>), então o navegador cuida do clique,
+    // teclado e abertura em nova aba sem depender de listeners frágeis.
     byId("content-y")?.addEventListener("input", applyContentPosition);
     byId("logo-size")?.addEventListener("input", applyLogoSettings);
     byId("logo-position")?.addEventListener("change", applyLogoSettings);
