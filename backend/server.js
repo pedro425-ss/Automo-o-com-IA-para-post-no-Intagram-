@@ -117,6 +117,8 @@ app.get("/sw.js", (req, res) => {
 });
 app.get("/pwa-icon-192.png", (req, res) => sendFrontendFile(res, "pwa-icon-192.png"));
 app.get("/pwa-icon-512.png", (req, res) => sendFrontendFile(res, "pwa-icon-512.png"));
+app.get("/pwa-icon-pro-192.png", (req, res) => sendFrontendFile(res, "pwa-icon-pro-192.png"));
+app.get("/pwa-icon-pro-512.png", (req, res) => sendFrontendFile(res, "pwa-icon-pro-512.png"));
 
 app.get("/script.js", (req, res) => {
   disableFrontendCache(res);
