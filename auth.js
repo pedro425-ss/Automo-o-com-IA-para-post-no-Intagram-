@@ -2,6 +2,7 @@
   const TOKEN_KEY = "story-imoveis-auth-token-v1";
   const $ = (id) => document.getElementById(id);
   let session = null;
+  let accessConfig = { active: false, plans: [] };
 
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
@@ -248,7 +249,8 @@
   }
 
   function planLabel(plan) {
-    return ({ individual:"Individual", imobiliaria:"Imobiliária", equipe:"Equipe" })[plan] || plan || "-";
+    const fromConfig = accessConfig.plans?.find((item) => item.id === plan);
+    return fromConfig?.name || ({ individual:"Individual", imobiliaria:"Imobiliária", equipe:"Equipe" })[plan] || plan || "-";
   }
 
   async function openPanel() {
@@ -461,7 +463,34 @@
       .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  async function loadAccessConfig() {
+    try {
+      const response = await nativeFetch("/api/access-config", { cache: "no-store" });
+      if (!response.ok) return { active: false, plans: [] };
+      const data = await response.json();
+      return {
+        active: data.active === true,
+        enabled: data.enabled === true,
+        ready: data.ready === true,
+        plans: Array.isArray(data.plans) ? data.plans : [],
+      };
+    } catch {
+      return { active: false, plans: [] };
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    accessConfig = await loadAccessConfig();
+
+    // Segurança: enquanto a monetização não estiver 100% pronta,
+    // o gerador continua aberto e este módulo não interfere no layout.
+    if (!accessConfig.active) {
+      document.documentElement.dataset.accessMode = "open";
+      window.dispatchEvent(new CustomEvent("story-access-open"));
+      return;
+    }
+
+    document.documentElement.dataset.accessMode = "paid";
     injectStyles();
     createUi();
     restore();
@@ -469,6 +498,7 @@
 
   window.StoryAccess = {
     getSession: () => session,
+    getConfig: () => accessConfig,
     openPanel,
     logout,
   };
