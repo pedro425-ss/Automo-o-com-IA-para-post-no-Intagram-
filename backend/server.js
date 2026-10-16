@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { Pool } from "pg";
 
 const app = express();
-const APP_BUILD = "villela-gallery-3photos-20261016-1345";
+const APP_BUILD = "villela-gallery-photo-guard-20261016-1348";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -763,6 +763,66 @@ function canonicalImageKey(rawUrl) {
   }
 }
 
+function readRasterSize(buffer, contentType = "") {
+  try {
+    const type = String(contentType || "").toLowerCase();
+
+    // PNG
+    if (type.includes("png") && buffer.length >= 24 &&
+        buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+      return {
+        width: buffer.readUInt32BE(16),
+        height: buffer.readUInt32BE(20),
+      };
+    }
+
+    // JPEG
+    if ((type.includes("jpeg") || type.includes("jpg")) && buffer.length > 4 &&
+        buffer[0] === 0xff && buffer[1] === 0xd8) {
+      let offset = 2;
+      while (offset + 9 < buffer.length) {
+        if (buffer[offset] !== 0xff) { offset += 1; continue; }
+        const marker = buffer[offset + 1];
+        if (marker === 0xd8 || marker === 0xd9) { offset += 2; continue; }
+        const length = buffer.readUInt16BE(offset + 2);
+        if (!length || offset + length + 2 > buffer.length) break;
+
+        if (
+          marker === 0xc0 || marker === 0xc1 || marker === 0xc2 ||
+          marker === 0xc3 || marker === 0xc5 || marker === 0xc6 ||
+          marker === 0xc7 || marker === 0xc9 || marker === 0xca ||
+          marker === 0xcb || marker === 0xcd || marker === 0xce ||
+          marker === 0xcf
+        ) {
+          return {
+            height: buffer.readUInt16BE(offset + 5),
+            width: buffer.readUInt16BE(offset + 7),
+          };
+        }
+        offset += length + 2;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function isLikelyPropertyPhoto(buffer, contentType = "") {
+  const size = readRasterSize(buffer, contentType);
+  if (!size?.width || !size?.height) return false;
+
+  const { width, height } = size;
+  const aspect = width / height;
+
+  // Fotos do anúncio precisam ter resolução mínima e proporção fotográfica.
+  if (width < 420 || height < 240) return false;
+  if (aspect < 0.55 || aspect > 2.25) return false;
+
+  return true;
+}
+
 async function downloadValidImages(candidates, pageUrl, limit = 6) {
   const images = [];
   const buffers = [];
@@ -796,6 +856,11 @@ async function downloadValidImages(candidates, pageUrl, limit = 6) {
       if (contentType.includes("svg")) continue;
       if (buffer.length < 12000) continue;
       if (buffer.length > 4000000) continue;
+
+      if (!isLikelyPropertyPhoto(buffer, contentType)) {
+        console.warn("⚠️ Imagem descartada por proporção/tamanho:", candidate.source, candidate.url);
+        continue;
+      }
 
       const duplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
       if (duplicate) continue;
