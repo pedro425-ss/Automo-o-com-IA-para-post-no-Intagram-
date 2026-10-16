@@ -557,6 +557,7 @@
   }
 
   window.applyBrandThemeFromLogo = analyzeCurrentLogo;
+  window.reapplyBrandTheme = () => applyStoryBrand(currentTheme);
 
   document.addEventListener("DOMContentLoaded", () => {
     injectStyles();
