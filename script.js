@@ -33,8 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const areaInput = $("area");
   const descInput = $("description");
   const contactInput = $("contact");
-  const featureInputs = document.querySelectorAll(".feature");
-  const storyFeatures = $("story-features");
 
   const imageFitSelect = $("image-fit");
   const containBgSelect = $("contain-bg");
@@ -75,16 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (storyDescription) storyDescription.textContent = descInput?.value || "Descrição";
     if (storyContact) storyContact.textContent = contactInput?.value || "@suaimobiliaria";
 
-    if (storyFeatures) {
-      const selected = [...featureInputs]
-        .filter((item) => item.checked)
-        .map((item) => item.value);
-
-      storyFeatures.innerHTML = selected
-        .slice(0, 4)
-        .map((item) => `<span>${item}</span>`)
-        .join("");
-    }
   }
 
   function updateAdjustmentLabels() {
