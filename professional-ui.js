@@ -48,8 +48,8 @@
           min-height:100vh!important;
           margin:0 0 0 225px!important;
           padding:24px 0 34px!important;
-          grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;
-          gap:20px!important;
+          grid-template-columns:minmax(0,1.35fr) minmax(330px,.65fr)!important;
+          gap:22px!important;
           align-items:start!important;
         }
 
@@ -254,14 +254,11 @@
         body.desktop-wizard-active .btn-dark{background:#171d22!important;color:white!important}
 
         #desktop-preview-mount{
-          display:block!important;
-          position:sticky!important;top:18px!important;align-self:start!important;
-          width:100%!important;max-width:360px!important;min-width:0!important;
-          min-height:0!important;height:auto!important;padding:14px!important;
-          border:1px solid rgba(255,255,255,.065)!important;border-radius:18px!important;
+          position:sticky!important;top:24px!important;align-self:start!important;
+          min-height:auto!important;height:auto!important;padding:16px!important;border:1px solid rgba(255,255,255,.065)!important;border-radius:18px!important;
           background:linear-gradient(180deg,#10171c,#0b1115)!important;
           box-shadow:0 14px 36px rgba(22,31,38,.16)!important;
-          overflow:hidden!important;justify-self:end!important
+          overflow:hidden!important
         }
         #desktop-preview-mount::before{
           content:"Prévia do Story";display:block;position:static!important;margin:0 0 2px 1px!important;
@@ -272,11 +269,10 @@
           color:#7f8a92;font-size:8px!important;line-height:1.2!important
         }
         #desktop-preview-mount .story-preview-shell{
-          width:min(100%,320px)!important;height:auto!important;aspect-ratio:9/16!important;
-          margin:8px auto 0!important;border-radius:16px!important;
-          box-shadow:0 16px 36px rgba(0,0,0,.34)!important;
-          overflow:hidden!important;position:relative!important;
-          background:#0a0f12!important
+          width:min(100%,390px)!important;height:auto!important;aspect-ratio:9/16!important;
+          margin:8px auto 0!important;border-radius:18px!important;
+          box-shadow:0 18px 42px rgba(0,0,0,.36)!important;
+          overflow:hidden!important;position:relative!important
         }
         #desktop-preview-mount #preview-format-switch{
           display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;
@@ -297,9 +293,7 @@
           max-width:100%!important;
         }
         #desktop-preview-mount .story-preview-stage{
-          position:absolute!important;left:0!important;top:0!important;
           width:1080px!important;height:1920px!important;
-          margin:0!important;padding:0!important;
           transform-origin:top left!important;
         }
 
@@ -323,14 +317,14 @@
         body.desktop-wizard-active>.max-w-6xl{
           width:calc(100vw - 214px)!important;
           margin-left:204px!important;
-          grid-template-columns:minmax(0,1fr) minmax(285px,325px)!important;
+          grid-template-columns:minmax(0,1.28fr) minmax(315px,.72fr)!important;
           gap:16px!important;
           padding-top:18px!important;
         }
         #app-sidebar{width:176px!important}
         body.desktop-wizard-active .panel{max-width:none!important}
-        #desktop-preview-mount{padding:12px!important;max-width:325px!important}
-        #desktop-preview-mount .story-preview-shell{width:min(100%,292px)!important}
+        #desktop-preview-mount{padding:13px!important}
+        #desktop-preview-mount .story-preview-shell{width:min(100%,350px)!important}
         .desktop-wizard-tab{font-size:8px!important}
         .desktop-wizard-tab span{width:20px!important;height:20px!important;margin-right:4px!important}
       }
@@ -634,11 +628,10 @@
     if(!shell||!stage) return;
 
     const mount=document.getElementById("desktop-preview-mount");
-    const mountWidth=Math.max(250,(mount?.clientWidth||330)-28);
-    const availableWidth=Math.min(320,mountWidth);
-    const viewportHeight=Math.max(500,window.innerHeight-150);
+    const availableWidth=Math.max(280,Math.min(390,(mount?.clientWidth||390)-30));
+    const viewportHeight=Math.max(560,window.innerHeight-125);
     const maxByHeight=viewportHeight*(9/16);
-    const width=Math.max(240,Math.min(availableWidth,maxByHeight));
+    const width=Math.min(availableWidth,maxByHeight);
 
     shell.style.width=`${width}px`;
     shell.style.height=`${width*(16/9)}px`;
