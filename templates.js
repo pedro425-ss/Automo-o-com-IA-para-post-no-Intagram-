@@ -3,12 +3,12 @@
 
   const TEMPLATES = {
     venda: {
-      label: "Venda",
-      badge: "IMÓVEL À VENDA",
-      footer: "Casas, apartamentos, terrenos e áreas",
-      cta: "Fale conosco",
-      titlePlaceholder: "Ex: Casa ampla com excelente localização",
-      descriptionPlaceholder: "Ex: Excelente oportunidade para compra. Agende sua visita.",
+      label: "Residencial",
+      badge: "CASA À VENDA",
+      footer: "Casas urbanas, sobrados, apartamentos e terrenos",
+      cta: "Agende uma visita",
+      titlePlaceholder: "Ex: Casa com 3 dormitórios e 2 vagas",
+      descriptionPlaceholder: "Ex: Casa bem localizada, com ótimo acabamento, quintal e fácil acesso.",
       theme: {
         badge: "#c88b3a",
         price: "#f8d78c",
@@ -20,10 +20,10 @@
     locacao: {
       label: "Locação",
       badge: "IMÓVEL PARA LOCAÇÃO",
-      footer: "Encontre o imóvel ideal para alugar",
+      footer: "Casas, apartamentos e imóveis urbanos para locação",
       cta: "Consulte disponibilidade",
       titlePlaceholder: "Ex: Casa para locação em ótima região",
-      descriptionPlaceholder: "Ex: Imóvel disponível para locação. Consulte condições e agende uma visita.",
+      descriptionPlaceholder: "Ex: Imóvel pronto para morar, próximo a comércios e vias de acesso.",
       theme: {
         badge: "#315b76",
         price: "#bfe2f3",
@@ -33,12 +33,12 @@
       }
     },
     terreno: {
-      label: "Terreno",
-      badge: "TERRENO À VENDA",
-      footer: "Terrenos, áreas e oportunidades",
+      label: "Terreno Urbano",
+      badge: "TERRENO URBANO À VENDA",
+      footer: "Terrenos urbanos para construção e investimento",
       cta: "Solicite mais informações",
-      titlePlaceholder: "Ex: Terreno com excelente topografia",
-      descriptionPlaceholder: "Ex: Terreno bem localizado, com ótimo potencial e fácil acesso.",
+      titlePlaceholder: "Ex: Terreno urbano em localização estratégica",
+      descriptionPlaceholder: "Ex: Terreno plano, com boa testada, infraestrutura e fácil acesso.",
       theme: {
         badge: "#775a32",
         price: "#ead4a9",
@@ -48,12 +48,12 @@
       }
     },
     sitio: {
-      label: "Sítio",
-      badge: "SÍTIO À VENDA",
-      footer: "Sítios, chácaras, terrenos e áreas",
-      cta: "Agende uma visita",
-      titlePlaceholder: "Ex: Sítio com casa sede e área verde",
-      descriptionPlaceholder: "Ex: Natureza, tranquilidade e excelente acesso em uma propriedade completa.",
+      label: "Área Industrial",
+      badge: "ÁREA INDUSTRIAL",
+      footer: "Áreas industriais, terrenos e expansão empresarial",
+      cta: "Consulte zoneamento e condições",
+      titlePlaceholder: "Ex: Área industrial com acesso à rodovia",
+      descriptionPlaceholder: "Ex: Área ampla, zoneamento industrial, boa topografia e acesso para carretas.",
       theme: {
         badge: "#4f6332",
         price: "#dce8a8",
@@ -63,12 +63,12 @@
       }
     },
     comercial: {
-      label: "Comercial",
-      badge: "IMÓVEL COMERCIAL",
-      footer: "Salas, galpões e imóveis comerciais",
+      label: "Galpão",
+      badge: "GALPÃO INDUSTRIAL / COMERCIAL",
+      footer: "Galpões, depósitos e imóveis comerciais",
       cta: "Fale com nossa equipe",
-      titlePlaceholder: "Ex: Galpão comercial pronto para uso",
-      descriptionPlaceholder: "Ex: Excelente opção para sua empresa, com localização estratégica e fácil acesso.",
+      titlePlaceholder: "Ex: Galpão com pé-direito alto e amplo pátio",
+      descriptionPlaceholder: "Ex: Galpão com docas, energia trifásica, pátio e acesso rápido às principais rodovias.",
       theme: {
         badge: "#4b4f58",
         price: "#e4e8ee",
