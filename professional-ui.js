@@ -246,7 +246,12 @@
         }
         #desktop-preview-mount .story-preview-shell{
           width:min(100%,360px)!important;height:auto!important;aspect-ratio:9/16!important;
-          margin:6px auto 0!important;border-radius:20px!important;box-shadow:0 20px 50px rgba(0,0,0,.38)!important
+          margin:6px auto 0!important;border-radius:20px!important;box-shadow:0 20px 50px rgba(0,0,0,.38)!important;
+          overflow:hidden!important;position:relative!important
+        }
+        #desktop-preview-mount .story-preview-stage{
+          width:1080px!important;height:1920px!important;
+          transform-origin:top left!important;
         }
 
         .desktop-wizard-footer{
@@ -522,10 +527,33 @@
     if(matchMedia(DESKTOP).matches) scrollTo({top:0,behavior:"smooth"});
   }
 
+  function resizeDesktopPreview(){
+    if(!matchMedia(DESKTOP).matches) return;
+    const shell=document.querySelector("#desktop-preview-mount .story-preview-shell");
+    const stage=document.querySelector("#desktop-preview-mount .story-preview-stage");
+    if(!shell||!stage) return;
+
+    const mount=document.getElementById("desktop-preview-mount");
+    const availableWidth=Math.max(260,Math.min(360,(mount?.clientWidth||380)-36));
+    const viewportHeight=Math.max(520,window.innerHeight-150);
+    const maxByHeight=viewportHeight*(9/16);
+    const width=Math.min(availableWidth,maxByHeight);
+
+    shell.style.width=`${width}px`;
+    shell.style.height=`${width*(16/9)}px`;
+
+    const scale=width/1080;
+    stage.style.transform=`scale(${scale})`;
+    stage.style.transformOrigin="top left";
+  }
+
   function sync(){
     const desk=matchMedia(DESKTOP).matches;
     document.body.classList.toggle("desktop-wizard-active",desk);
-    if(desk)setDesktopStep(desktopStep);
+    if(desk){
+      setDesktopStep(desktopStep);
+      requestAnimationFrame(resizeDesktopPreview);
+    }
   }
 
   document.addEventListener("DOMContentLoaded",()=>{
@@ -535,6 +563,8 @@
       const panel=document.querySelector(".panel");
       if(panel)new MutationObserver(()=>{classify();if(matchMedia(DESKTOP).matches)setDesktopStep(desktopStep)}).observe(panel,{childList:true});
       matchMedia(DESKTOP).addEventListener?.("change",sync);
+      window.addEventListener("resize",()=>requestAnimationFrame(resizeDesktopPreview));
+      window.addEventListener("orientationchange",()=>setTimeout(resizeDesktopPreview,120));
       sync();
     },100);
   });
