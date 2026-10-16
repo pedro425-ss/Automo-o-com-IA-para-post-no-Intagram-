@@ -278,7 +278,7 @@
             <input id="admin-owner-name" placeholder="Responsável">
             <input id="admin-owner-email" type="email" placeholder="E-mail do responsável">
             <input id="admin-owner-password" type="password" placeholder="Senha inicial (mín. 8)">
-            <select id="admin-plan"><option value="individual">Individual — 1 usuário</option><option value="imobiliaria">Imobiliária — até 5</option><option value="equipe">Equipe — até 10</option></select>
+            <select id="admin-plan"><option value="individual">Individual — 1 usuário</option><option value="imobiliaria">Imobiliária — até 3</option><option value="equipe">Equipe — até 10</option></select>
             <input id="admin-days" type="number" min="1" value="30" placeholder="Dias de acesso">
             <button id="admin-create-org" class="access-mini primary wide" type="button">Criar imobiliária e liberar acesso</button>
           </div>
