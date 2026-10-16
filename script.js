@@ -22,6 +22,23 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+window.applyFramePreset = function applyFramePreset(x, y) {
+  const posX = document.getElementById("pos-x");
+  const posY = document.getElementById("pos-y");
+
+  if (posX) {
+    posX.value = String(x);
+    posX.dispatchEvent(new Event("input", { bubbles: true }));
+    posX.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  if (posY) {
+    posY.value = String(y);
+    posY.dispatchEvent(new Event("input", { bubbles: true }));
+    posY.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("✅ DOMContentLoaded - registrando eventos");
 
