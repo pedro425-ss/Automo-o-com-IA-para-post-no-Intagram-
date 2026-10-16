@@ -109,7 +109,7 @@
         <div class="story-extra-control">
           <div class="story-extra-head"><label class="story-extra-title" for="logo-size">Tamanho do logo</label><span id="logo-size-value" class="story-extra-value">200 px</span></div>
           <input id="logo-size" class="story-extra-range" type="range" min="100" max="320" step="5" value="200" />
-          <div class="hint">Ajusta o tamanho sem alterar a imagem original.</div>
+          <div class="hint">Encaixe automático ativo: o formato do logo é respeitado; use este controle só para o ajuste fino.</div>
         </div>
       </div>
 
@@ -183,22 +183,111 @@
     saveSettings({ contentY: value });
   }
 
+  function inspectLogoContent(img) {
+    if (!img?.naturalWidth || !img?.naturalHeight) {
+      return { aspect: 1, occupancy: 1 };
+    }
+
+    const aspect = img.naturalWidth / img.naturalHeight;
+    let occupancy = 1;
+
+    try {
+      const maxSide = 140;
+      const scale = Math.min(maxSide / img.naturalWidth, maxSide / img.naturalHeight, 1);
+      const width = Math.max(1, Math.round(img.naturalWidth * scale));
+      const height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return { aspect, occupancy };
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      const pixels = ctx.getImageData(0, 0, width, height).data;
+
+      let minX = width, minY = height, maxX = -1, maxY = -1;
+      for (let y = 0; y < height; y += 2) {
+        for (let x = 0; x < width; x += 2) {
+          const i = (y * width + x) * 4;
+          if (pixels[i + 3] < 36) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      if (maxX >= minX && maxY >= minY) {
+        const contentW = Math.max(1, maxX - minX + 1);
+        const contentH = Math.max(1, maxY - minY + 1);
+        occupancy = Math.max(contentW / width, contentH / height);
+      }
+    } catch (error) {
+      console.warn("Não foi possível medir as margens do logo:", error);
+    }
+
+    return { aspect, occupancy };
+  }
+
+  function getSmartLogoBox(img, baseSize) {
+    const { aspect, occupancy } = inspectLogoContent(img);
+    const safeAspect = clamp(Number(aspect) || 1, 0.35, 3.4);
+    let width = baseSize;
+    let height = baseSize;
+    let radius = 28;
+
+    if (safeAspect >= 1.35) {
+      width = clamp(baseSize * Math.min(safeAspect, 2.35), baseSize, 500);
+      height = clamp(baseSize * 0.82, 110, 300);
+      radius = 28;
+    } else if (safeAspect <= 0.75) {
+      width = clamp(baseSize * 0.82, 110, 280);
+      height = clamp(baseSize / Math.max(safeAspect, 0.55), baseSize, 390);
+      radius = 28;
+    } else {
+      width = baseSize;
+      height = baseSize;
+      radius = Math.round(baseSize * 0.18);
+    }
+
+    const contentScale = occupancy < 0.86
+      ? clamp(0.88 / Math.max(occupancy, 0.45), 1, 1.7)
+      : 1;
+
+    const padding = Math.round(clamp(Math.min(width, height) * 0.055, 8, 18));
+    return { width, height, radius, contentScale, aspect: safeAspect };
+  }
+
   function applyLogoSettings() {
     const wrapper = byId("story-logo-wrapper");
+    const img = byId("story-logo-preview");
     const sizeInput = byId("logo-size");
     const positionInput = byId("logo-position");
     if (!wrapper) return;
 
     const size = clamp(Number(sizeInput?.value || 200), 100, 320);
     const position = positionInput?.value || "top-left";
+    const metrics = getSmartLogoBox(img, size);
 
-    wrapper.style.setProperty("width", `${size}px`, "important");
-    wrapper.style.setProperty("height", `${size}px`, "important");
+    wrapper.style.setProperty("width", `${metrics.width}px`, "important");
+    wrapper.style.setProperty("height", `${metrics.height}px`, "important");
+    wrapper.style.setProperty("border-radius", `${metrics.radius}px`, "important");
+    wrapper.style.setProperty("padding", `${Math.round(clamp(Math.min(metrics.width, metrics.height) * 0.055, 8, 18))}px`, "important");
     wrapper.style.setProperty("top", "50px", "important");
     wrapper.style.setProperty("bottom", "auto", "important");
     wrapper.style.setProperty("right", "auto", "important");
     wrapper.style.setProperty("left", "50px", "important");
     wrapper.style.setProperty("transform", "none", "important");
+
+    if (img) {
+      img.style.setProperty("width", "100%", "important");
+      img.style.setProperty("height", "100%", "important");
+      img.style.setProperty("object-fit", "contain", "important");
+      img.style.setProperty("object-position", "center", "important");
+      img.style.setProperty("transform", `scale(${metrics.contentScale})`, "important");
+      img.style.setProperty("transform-origin", "center center", "important");
+    }
 
     if (position === "top-center") {
       wrapper.style.setProperty("left", "50%", "important");
@@ -209,8 +298,12 @@
     }
 
     const sizeLabel = byId("logo-size-value");
-    if (sizeLabel) sizeLabel.textContent = `${size} px`;
+    if (sizeLabel) {
+      const format = metrics.aspect >= 1.35 ? "horizontal" : metrics.aspect <= 0.75 ? "vertical" : "compacto";
+      sizeLabel.textContent = `${size} px • ${format}`;
+    }
     saveSettings({ logoSize: size, logoPosition: position });
+    try { if (typeof window.invalidateStoryCache === "function") window.invalidateStoryCache(); } catch {}
   }
 
   async function updateQrCard() {
@@ -334,6 +427,10 @@
     byId("content-y")?.addEventListener("input", applyContentPosition);
     byId("logo-size")?.addEventListener("input", applyLogoSettings);
     byId("logo-position")?.addEventListener("change", applyLogoSettings);
+    const logoPreview = byId("story-logo-preview");
+    logoPreview?.addEventListener("load", () => {
+      requestAnimationFrame(applyLogoSettings);
+    });
 
     byId("save-branding-now")?.addEventListener("click", () => {
       saveSettings({
