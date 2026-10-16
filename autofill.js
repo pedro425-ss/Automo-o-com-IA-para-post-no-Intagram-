@@ -57,6 +57,18 @@
       count++;
     }
 
+    const listingImages = Array.isArray(data.imagens)
+      ? data.imagens.filter(Boolean).slice(0, 8)
+      : Array.isArray(data.images)
+        ? data.images.filter(Boolean).slice(0, 8)
+        : [];
+    if (listingImages.length) {
+      window.__listingImages = listingImages;
+      window.dispatchEvent(new CustomEvent("listing-images-loaded", {
+        detail: { images: listingImages }
+      }));
+    }
+
     if (typeof window.invalidateStoryCache === "function") {
       window.invalidateStoryCache();
     } else if (typeof invalidateStoryCache === "function") {
@@ -110,6 +122,8 @@
                   json.imageUrl ||
                   json.dados?.imagemUrl ||
                   "",
+                imagens:
+                  (Array.isArray(json.imagens) && json.imagens.length ? json.imagens : json.dados?.imagens) || [],
               }
             : json;
 
