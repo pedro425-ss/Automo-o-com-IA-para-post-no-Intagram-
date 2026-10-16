@@ -1,6 +1,16 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
+  async function getBackendBuild() {
+    try {
+      const response = await fetch("/api/version", { cache: "no-store" });
+      const json = await response.json();
+      return json.build || "desconhecido";
+    } catch {
+      return "sem-versao";
+    }
+  }
+
   function normalize(value) {
     return String(value || "")
       .normalize("NFD")
@@ -90,6 +100,8 @@
         const originalText = button.textContent;
         button.disabled = true;
         button.textContent = "Buscando dados...";
+        const backendBuild = await getBackendBuild();
+        console.log("🧩 Backend build:", backendBuild);
 
         try {
           const response = await fetch(`${window.location.origin}/analisar-imovel`, {
@@ -132,8 +144,8 @@
           if (!applied) {
             const resolved = json.urlResolvida || data.urlResolvida || "";
             alert(resolved
-              ? "A página foi localizada, mas o site não entregou os dados em formato legível para o preenchimento automático."
-              : "O anúncio abriu, mas não encontrei informações que eu pudesse preencher automaticamente.");
+              ? "A página foi localizada, mas o site não entregou os dados em formato legível para o preenchimento automático.\n\nVersão do backend: " + backendBuild
+              : "O anúncio abriu, mas não encontrei informações que eu pudesse preencher automaticamente.\n\nVersão do backend: " + backendBuild);
             return;
           }
 
