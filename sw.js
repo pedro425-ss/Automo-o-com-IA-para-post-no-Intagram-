@@ -1,14 +1,14 @@
-const CACHE_NAME = "story-imoveis-pwa-v20";
+const CACHE_NAME = "story-imoveis-pwa-v21";
 const APP_SHELL = [
   "/",
   "/Style.css",
   "/script.js",
   "/auth.js?v=2",
-  "/autofill.js?v=4",
+  "/autofill.js?v=5",
   "/brand-theme.js?v=4",
   "/mobile-wizard.js?v=9",
   "/realty-profile.js?v=3",
-  "/professional-ui.js?v=11",
+  "/professional-ui.js?v=12",
   "/manifest.webmanifest?v=3",
   "/pwa-icon-pro-192.png",
   "/pwa-icon-pro-512.png"
