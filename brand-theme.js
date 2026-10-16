@@ -474,7 +474,7 @@
     price?.style.setProperty("color", rgbToHex(theme.highlight), "important");
     overlay?.style.setProperty(
       "background",
-      `linear-gradient(180deg,rgba(0,0,0,.00) 0%,rgba(0,0,0,.08) 48%,rgba(6,9,13,.56) 77%,rgba(5,8,12,.88) 100%)`,
+      `linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.03) 56%,rgba(6,9,13,.38) 79%,rgba(5,8,12,.78) 100%)`,
       "important"
     );
     cta?.style.setProperty("background", "rgba(10,14,20,.76)", "important");
