@@ -273,7 +273,7 @@
       storySetBox.className = "story-set-box";
       storySetBox.innerHTML = `
         <div class="story-set-title">Pacote de Stories</div>
-        <div class="story-set-copy">Gere 3 versões usando o mesmo visual do Story principal. Para usar fotos diferentes com segurança, selecione várias fotos manualmente.</div>
+        <div class="story-set-copy">Gere 3 versões com o mesmo visual do Story principal e fotos diferentes do próprio anúncio quando disponíveis.</div>
         <div class="story-set-actions">
           <button id="build-story-set" class="btn btn-green" type="button">Gerar 3 Stories</button>
           <button id="download-story-set" class="btn btn-gold" type="button">Baixar 3 PNGs</button>
@@ -302,7 +302,7 @@
       const images = Array.isArray(event.detail?.images) ? event.detail.images.filter(Boolean) : [];
       listingImages = images.slice(0, 8);
       if (!uploadedImages.length && status) {
-        status.textContent = "Foto principal do anúncio carregada com segurança. Para variar as fotos, selecione várias imagens manualmente."
+        status.textContent = "Fotos seguras do anúncio carregadas. Os Stories 2 e 3 usarão novas fotos quando disponíveis."
       }
       slides = [];
       nav?.classList.add("hidden");
@@ -334,11 +334,26 @@
       const base = getBaseData();
 
       const manualImages = uploadedImages.filter(Boolean);
-      const mainImage = manualImages[0] || storyImage.src || listingImages[0] || "";
+      const safeListingImages = listingImages.filter(Boolean);
+
+      const mainImage =
+        manualImages[0] ||
+        safeListingImages[0] ||
+        storyImage.src ||
+        "";
+
       if (!mainImage) return [];
 
-      const secondImage = manualImages[1] || mainImage;
-      const thirdImage = manualImages[2] || manualImages[1] || mainImage;
+      const secondImage =
+        manualImages[1] ||
+        safeListingImages[1] ||
+        mainImage;
+
+      const thirdImage =
+        manualImages[2] ||
+        safeListingImages[2] ||
+        safeListingImages[1] ||
+        mainImage;
 
       return [
         {
@@ -351,7 +366,7 @@
           area: base.area,
           description: base.description,
           contact: base.contact,
-          frame: { x: 50, y: 42, zoom: 100 }
+          frame: { x: 50, y: 50, zoom: 100 }
         },
         {
           type: "cover",
@@ -361,9 +376,9 @@
           price: base.price,
           location: base.location,
           area: base.area,
-          description: "Excelente opção para locação. Veja mais detalhes e fotos do imóvel.",
+          description: base.description,
           contact: base.contact,
-          frame: { x: 50, y: 34, zoom: 108 }
+          frame: { x: 50, y: 50, zoom: 100 }
         },
         {
           type: "cover",
@@ -373,9 +388,9 @@
           price: base.price,
           location: base.location,
           area: base.area,
-          description: "Entre em contato para receber mais informações e agendar sua visita.",
+          description: base.description,
           contact: base.contact,
-          frame: { x: 50, y: 54, zoom: 104 }
+          frame: { x: 50, y: 50, zoom: 100 }
         }
       ];
     }
