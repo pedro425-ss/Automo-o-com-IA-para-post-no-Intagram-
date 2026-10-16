@@ -217,7 +217,7 @@
   }
 
   function getStepForSection(section) {
-    if (section.querySelector("#imovel-url")) return 1;
+    if (section.id === "realty-profile-panel" || section.querySelector("#imovel-url")) return 1;
 
     if (section.querySelector("#badge") || section.querySelector("#title") || section.querySelector("#price") || section.querySelector("#city") || section.querySelector("#district") || section.querySelector("#area")) {
       return 2;
