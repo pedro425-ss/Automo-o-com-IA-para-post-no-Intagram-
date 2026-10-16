@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { Pool } from "pg";
 
 const app = express();
-const APP_BUILD = "villela-main-gallery-20261016-1155";
+const APP_BUILD = "villela-gallery-3photos-20261016-1345";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -540,6 +540,21 @@ function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
     container.find("img").each((index, el) => {
       const img = $(el);
 
+      const srcText = [
+        img.attr("src"),
+        img.attr("data-src"),
+        img.attr("data-lazy-src"),
+        img.attr("data-original"),
+        img.attr("data-image"),
+        img.attr("data-url"),
+        img.attr("srcset"),
+        img.attr("data-srcset"),
+        img.attr("alt"),
+        img.attr("class")
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      if (/(logo|brand|marca|banner|icon|favicon|sprite|avatar|placeholder)/i.test(srcText)) return;
+
       const linkedListing = img.closest('a[href*="/imovel/"]').attr("href") || "";
       const linkedCode = extractPropertyCode(linkedListing);
       if (listingCode && linkedCode && linkedCode !== listingCode) return;
@@ -587,11 +602,17 @@ function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
 
     if (unique.length >= 2) {
       const classText = ((container.attr("class") || "") + " " + (container.attr("id") || "")).toLowerCase();
+      const rawImgCount = container.find("img").length;
+
       let score = unique.length * 100 - selectorIndex * 3;
       if (/(gallery|galeria|photo|foto|carousel|swiper)/i.test(classText)) score += 180;
-      if (/(similar|related|recommend|card)/i.test(classText)) score -= 500;
+      if (/(similar|related|recommend|card|header|navbar|footer)/i.test(classText)) score -= 500;
 
-      containers.push({ score, images: unique, classText });
+      // A galeria principal da Villela costuma ser um bloco pequeno com poucas fotos.
+      if (rawImgCount >= 2 && rawImgCount <= 8) score += 260;
+      if (rawImgCount > 12) score -= 700;
+
+      containers.push({ score, images: unique, classText, rawImgCount });
     }
   }
 
@@ -772,8 +793,9 @@ async function downloadValidImages(candidates, pageUrl, limit = 6) {
       const buffer = Buffer.from(response.data || []);
       if (!buffer.length) continue;
       if (!contentType.startsWith("image/")) continue;
-      if (buffer.length < 7000 && !contentType.includes("svg")) continue;
-      if (buffer.length > 2500000) continue;
+      if (contentType.includes("svg")) continue;
+      if (buffer.length < 12000) continue;
+      if (buffer.length > 4000000) continue;
 
       const duplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
       if (duplicate) continue;
