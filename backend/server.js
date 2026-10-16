@@ -96,6 +96,7 @@ app.get("/Style.css", (req, res) => sendFrontendFile(res, "Style.css"));
 app.get("/adjustments.css", (req, res) => sendFrontendFile(res, "adjustments.css"));
 app.get("/mobile.css", (req, res) => sendFrontendFile(res, "mobile.css"));
 app.get("/adjustments.js", (req, res) => sendFrontendFile(res, "adjustments.js"));
+app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
 
 app.get("/script.js", (req, res) => {
   disableFrontendCache(res);
@@ -112,10 +113,9 @@ app.get("/script.js", (req, res) => {
     const propertiesScript = fs.readFileSync(path.join(frontendDir, "properties.js"), "utf8");
     const logoLibraryScript = fs.readFileSync(path.join(frontendDir, "logo-library.js"), "utf8");
     const cloudProfilesScript = fs.readFileSync(path.join(frontendDir, "cloud-profiles.js"), "utf8");
-    const brandThemeScript = fs.readFileSync(path.join(frontendDir, "brand-theme.js"), "utf8");
 
     return res.send(
-      `${mainScript}\n\n/* Recursos avançados */\n${extrasScript}\n\n/* Pacote de 3 Stories */\n${storySetScript}\n\n/* Preenchimento automático */\n${autofillScript}\n\n/* Modelos de Story */\n${templatesScript}\n\n/* Rascunhos e histórico */\n${workflowScript}\n\n/* Exportação Feed e Quadrado */\n${exportFormatsScript}\n\n/* Painel de imóveis salvos */\n${propertiesScript}\n\n/* Biblioteca de logos */\n${logoLibraryScript}\n\n/* Perfis sincronizados na nuvem */\n${cloudProfilesScript}\n\n/* Tema automático pela identidade do logo */\n${brandThemeScript}`
+      `${mainScript}\n\n/* Recursos avançados */\n${extrasScript}\n\n/* Pacote de 3 Stories */\n${storySetScript}\n\n/* Preenchimento automático */\n${autofillScript}\n\n/* Modelos de Story */\n${templatesScript}\n\n/* Rascunhos e histórico */\n${workflowScript}\n\n/* Exportação Feed e Quadrado */\n${exportFormatsScript}\n\n/* Painel de imóveis salvos */\n${propertiesScript}\n\n/* Biblioteca de logos */\n${logoLibraryScript}\n\n/* Perfis sincronizados na nuvem */\n${cloudProfilesScript}`
     );
   } catch (error) {
     console.error("❌ Erro ao montar script do frontend:", error.message);
