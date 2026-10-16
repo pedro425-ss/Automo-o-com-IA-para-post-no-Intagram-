@@ -108,6 +108,9 @@
           });
 
           const json = await response.json().catch(() => ({}));
+          if (response.status === 401 || response.status === 403) {
+            throw new Error("A busca foi bloqueada por controle de acesso. Atualize a página e tente novamente.");
+          }
           const data = json.dados
             ? {
                 ...json.dados,
