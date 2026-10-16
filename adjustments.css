@@ -1,0 +1,143 @@
+.adjustment-panel{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.adjustment-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+@media (min-width:900px){
+  .adjustment-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+.adjust-control{
+  padding:14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.adjust-control-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.adjust-control-title{
+  font-size:13px;
+  font-weight:800;
+  color:#f8d78c;
+}
+
+.adjust-value{
+  min-width:54px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(200,139,58,.18);
+  border:1px solid rgba(200,139,58,.35);
+  color:#f8d78c;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+}
+
+.adjust-range{
+  width:100%;
+  accent-color:#c88b3a;
+  cursor:pointer;
+}
+
+.adjust-range-scale{
+  display:flex;
+  justify-content:space-between;
+  margin-top:6px;
+  font-size:10px;
+  opacity:.55;
+}
+
+.adjust-hint{
+  margin-top:8px;
+  font-size:11px;
+  line-height:1.4;
+  opacity:.66;
+}
+
+.framing-block{
+  padding:14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.framing-title{
+  margin-bottom:10px;
+  font-size:13px;
+  font-weight:800;
+  color:#f8d78c;
+}
+
+.framing-presets{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+
+.frame-preset{
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:9px 6px;
+  background:rgba(75,79,42,.45);
+  color:white;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.frame-preset:hover,
+.frame-preset:focus-visible{
+  background:rgba(200,139,58,.32);
+  border-color:rgba(200,139,58,.55);
+  outline:none;
+}
+
+.adjust-actions{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.btn-reset-adjustments{
+  width:100%;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  padding:11px 14px;
+  background:rgba(255,255,255,.06);
+  color:white;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.btn-reset-adjustments:hover{
+  background:rgba(255,255,255,.1);
+}
+
+#story-image-preview{
+  will-change:transform,object-position;
+  transition:transform .14s ease-out,object-position .14s ease-out;
+}
+
+@media (max-width:480px){
+  .framing-presets{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
