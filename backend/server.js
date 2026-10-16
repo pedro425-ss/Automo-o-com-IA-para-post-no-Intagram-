@@ -113,8 +113,8 @@ app.get("/sw.js", (req, res) => {
   res.type("application/javascript; charset=utf-8");
   return res.sendFile(path.join(frontendDir, "sw.js"));
 });
-app.get("/pwa-icon-192.svg", (req, res) => sendFrontendFile(res, "pwa-icon-192.svg"));
-app.get("/pwa-icon-512.svg", (req, res) => sendFrontendFile(res, "pwa-icon-512.svg"));
+app.get("/pwa-icon-192.png", (req, res) => sendFrontendFile(res, "pwa-icon-192.png"));
+app.get("/pwa-icon-512.png", (req, res) => sendFrontendFile(res, "pwa-icon-512.png"));
 
 app.get("/script.js", (req, res) => {
   disableFrontendCache(res);
