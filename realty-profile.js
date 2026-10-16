@@ -102,21 +102,30 @@
     const style = document.createElement("style");
     style.id = "realty-profile-styles";
     style.textContent = `
-      .realty-profile-controls{
-        display:grid;grid-template-columns:1fr 1fr;gap:8px;
-        margin:0 0 12px;padding:10px;border-radius:13px;
-        border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.12)
+      .realty-profile-panel{margin-top:10px}
+      .realty-profile-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+      .realty-profile-title{font-size:13px;font-weight:950;letter-spacing:-.02em}
+      .realty-profile-subtitle{margin-top:3px;font-size:9px;line-height:1.35;opacity:.62}
+      .realty-profile-badge{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:rgba(216,162,59,.13);border:1px solid rgba(216,162,59,.22);color:#e8c77f;font-size:8px;font-weight:900}
+      .realty-profile-group{margin-top:10px}
+      .realty-profile-label{display:block;margin-bottom:7px;font-size:9px;font-weight:950;color:#e8c77f;text-transform:uppercase;letter-spacing:.07em}
+      .realty-profile-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+      .realty-profile-card{
+        min-height:78px;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.025);color:#fff;text-align:left;cursor:pointer;transition:.16s ease
       }
-      .realty-profile-field{display:flex;flex-direction:column;gap:5px}
-      .realty-profile-label{font-size:10px;font-weight:900;color:#f8d78c;text-transform:uppercase;letter-spacing:.04em}
-      .realty-profile-select{
-        width:100%;min-height:40px;border-radius:10px;padding:7px 9px;
-        border:1px solid rgba(255,255,255,.10);background:#292d19;color:#fff;
-        font-size:12px;font-weight:800
+      .realty-profile-card:hover{border-color:rgba(216,162,59,.28);transform:translateY(-1px)}
+      .realty-profile-card.is-active{
+        background:linear-gradient(180deg,rgba(216,162,59,.16),rgba(216,162,59,.07));
+        border-color:rgba(216,162,59,.55);box-shadow:0 0 0 2px rgba(216,162,59,.06)
       }
+      .realty-profile-card-icon{display:block;font-size:16px;line-height:1;margin-bottom:7px}
+      .realty-profile-card strong{display:block;font-size:10px;font-weight:950}
+      .realty-profile-card span:last-child{display:block;margin-top:3px;font-size:8px;line-height:1.3;opacity:.65}
+      .realty-profile-select{display:none!important}
       .realty-profile-summary{
-        grid-column:1/-1;padding:7px 9px;border-radius:9px;
-        background:rgba(255,255,255,.04);font-size:10px;line-height:1.35;opacity:.72
+        margin-top:9px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.04);
+        font-size:9px;line-height:1.35;opacity:.72
       }
 
       html[data-realty-market="rural"] .instagram-story{
@@ -178,56 +187,122 @@
       }
 
       @media(max-width:899px){
-        .realty-profile-controls{grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;padding:7px}
-        .realty-profile-label{font-size:9px}
-        .realty-profile-select{min-height:36px;padding:6px 7px;font-size:11px}
-        .realty-profile-summary{padding:6px 7px;font-size:9px}
+        .realty-profile-panel{margin-top:7px}
+        .realty-profile-card-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+        .realty-profile-card{min-height:72px;padding:8px}
+        .realty-profile-card-icon{font-size:15px;margin-bottom:6px}
+        .realty-profile-card strong{font-size:9px}
+        .realty-profile-card span:last-child{font-size:7.5px}
+        .realty-profile-summary{padding:6px 7px;font-size:8px}
       }
     `;
     document.head.appendChild(style);
   }
 
   function buildUi() {
-    if ($("realty-profile-controls")) return;
+    if ($("realty-profile-panel")) return;
     const templatePanel = $("story-template-panel");
-    if (!templatePanel) return;
+    const editorPanel = document.querySelector(".panel");
+    if (!templatePanel || !editorPanel) return;
 
-    const controls = document.createElement("div");
-    controls.id = "realty-profile-controls";
-    controls.className = "realty-profile-controls";
-    controls.innerHTML = `
-      <label class="realty-profile-field">
-        <span class="realty-profile-label">Tipo de imobiliária</span>
-        <select id="realty-market" class="realty-profile-select">
-          <option value="urbano">Urbana</option>
-          <option value="rural">Rural</option>
-          <option value="misto">Mista</option>
-        </select>
-      </label>
-      <label class="realty-profile-field">
+    const profilePanel = document.createElement("div");
+    profilePanel.id = "realty-profile-panel";
+    profilePanel.className = "section realty-profile-panel";
+    profilePanel.innerHTML = `
+      <div class="realty-profile-head">
+        <div>
+          <div class="realty-profile-title">Perfil da imobiliária</div>
+          <div class="realty-profile-subtitle">Defina o mercado e o posicionamento. O Story se adapta automaticamente.</div>
+        </div>
+        <div class="realty-profile-badge">Visual inteligente</div>
+      </div>
+
+      <div class="realty-profile-group">
+        <span class="realty-profile-label">Tipo da imobiliária</span>
+        <div class="realty-profile-card-grid">
+          <button type="button" class="realty-profile-card" data-market="urbano">
+            <span class="realty-profile-card-icon">▥</span>
+            <strong>Urbana</strong>
+            <span>Casas, apartamentos, terrenos e galpões.</span>
+          </button>
+          <button type="button" class="realty-profile-card" data-market="rural">
+            <span class="realty-profile-card-icon">♣</span>
+            <strong>Rural</strong>
+            <span>Chácaras, sítios, fazendas e temporada.</span>
+          </button>
+          <button type="button" class="realty-profile-card" data-market="misto">
+            <span class="realty-profile-card-icon">◫</span>
+            <strong>Mista</strong>
+            <span>Portfólio urbano e rural no mesmo perfil.</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="realty-profile-group">
         <span class="realty-profile-label">Posicionamento</span>
-        <select id="realty-position" class="realty-profile-select">
-          <option value="tradicional">Tradicional</option>
-          <option value="alto">Alto padrão</option>
-          <option value="popular">Popular / econômico</option>
-        </select>
-      </label>
+        <div class="realty-profile-card-grid">
+          <button type="button" class="realty-profile-card" data-position="tradicional">
+            <span class="realty-profile-card-icon">◆</span>
+            <strong>Tradicional</strong>
+            <span>Visual equilibrado e profissional.</span>
+          </button>
+          <button type="button" class="realty-profile-card" data-position="alto">
+            <span class="realty-profile-card-icon">◇</span>
+            <strong>Alto padrão</strong>
+            <span>Mais sofisticado, limpo e exclusivo.</span>
+          </button>
+          <button type="button" class="realty-profile-card" data-position="popular">
+            <span class="realty-profile-card-icon">⌁</span>
+            <strong>Popular</strong>
+            <span>Preço e oportunidade em destaque.</span>
+          </button>
+        </div>
+      </div>
+
+      <select id="realty-market" class="realty-profile-select" aria-hidden="true">
+        <option value="urbano">Urbana</option>
+        <option value="rural">Rural</option>
+        <option value="misto">Mista</option>
+      </select>
+      <select id="realty-position" class="realty-profile-select" aria-hidden="true">
+        <option value="tradicional">Tradicional</option>
+        <option value="alto">Alto padrão</option>
+        <option value="popular">Popular / econômico</option>
+      </select>
       <div id="realty-profile-summary" class="realty-profile-summary"></div>
     `;
 
-    const head = templatePanel.querySelector(".story-template-head");
-    head?.insertAdjacentElement("afterend", controls);
+    const urlSection = [...editorPanel.querySelectorAll(".section")].find((section) => section.querySelector("#imovel-url"));
+    if (urlSection) urlSection.insertAdjacentElement("afterend", profilePanel);
+    else templatePanel.insertAdjacentElement("beforebegin", profilePanel);
 
     $("realty-market").value = read(MARKET_KEY, "urbano");
     $("realty-position").value = read(POSITION_KEY, "tradicional");
 
-    $("realty-market").addEventListener("change", () => {
-      write(MARKET_KEY, $("realty-market").value);
-      applyProfile({ updateBadge: true });
+    profilePanel.addEventListener("click", (event) => {
+      const marketCard = event.target.closest("[data-market]");
+      if (marketCard) {
+        $("realty-market").value = marketCard.dataset.market;
+        write(MARKET_KEY, marketCard.dataset.market);
+        applyProfile({ updateBadge: true });
+        return;
+      }
+
+      const positionCard = event.target.closest("[data-position]");
+      if (positionCard) {
+        $("realty-position").value = positionCard.dataset.position;
+        write(POSITION_KEY, positionCard.dataset.position);
+        applyProfile({ updateBadge: false });
+      }
     });
-    $("realty-position").addEventListener("change", () => {
-      write(POSITION_KEY, $("realty-position").value);
-      applyProfile({ updateBadge: false });
+  }
+
+  function updateProfileCards(marketKey, positionKey) {
+    document.querySelectorAll("[data-market]").forEach((card) => {
+      card.classList.toggle("is-active", card.dataset.market === marketKey);
+    });
+    document.querySelectorAll("[data-position]").forEach((card) => {
+      card.classList.toggle("is-active", card.dataset.position === positionKey);
     });
   }
 
@@ -289,6 +364,7 @@
     document.documentElement.dataset.realtyMarket = marketKey;
     document.documentElement.dataset.realtyPosition = positionKey;
 
+    updateProfileCards(marketKey, positionKey);
     updateTemplateLabels(marketKey);
     updateCopy(marketKey, positionKey, updateBadge);
 
