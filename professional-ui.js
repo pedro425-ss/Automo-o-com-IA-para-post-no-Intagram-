@@ -208,6 +208,22 @@
           background:white!important
         }
         body.desktop-wizard-active .realty-profile-summary{background:#eef1f3!important;color:#697079!important}
+        body.desktop-wizard-active #realty-profile-panel{
+          background:#fff!important;border-color:#e2e5e8!important;color:#171b20!important
+        }
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-title{color:#171b20!important}
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-subtitle{color:#7b838b!important;opacity:1!important}
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-label{color:#74551e!important}
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-card{
+          background:#f7f8f9!important;color:#22292f!important;border-color:#e1e5e8!important
+        }
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-card.is-active{
+          background:#fff8e8!important;border-color:#d8a23b!important;box-shadow:0 0 0 2px rgba(216,162,59,.07)!important
+        }
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-card span:last-child{color:#767f87!important;opacity:1!important}
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-badge{
+          background:#fff5dc!important;border-color:#ead09c!important;color:#7c581c!important
+        }
 
         body.desktop-wizard-active .story-template-button{
           background:#f6f7f8!important;color:#2c3339!important;border-color:#e5e8eb!important
@@ -546,7 +562,7 @@
     const panel=document.querySelector(".panel"); if(!panel) return;
     [...panel.children].forEach(el=>{
       if(el.classList.contains("panel-header")||el.id==="desktop-wizard"||el.id==="desktop-wizard-footer") return;
-      if(el.id==="workflow-panel"||el.id==="property-panel"||el.querySelector?.("#imovel-url")) return assign(el,1);
+      if(el.id==="workflow-panel"||el.id==="property-panel"||el.id==="realty-profile-panel"||el.querySelector?.("#imovel-url")) return assign(el,1);
       if(el.id==="story-template-panel"||el.querySelector?.("#badge")||el.querySelector?.("#title")||el.querySelector?.("#price")||el.querySelector?.("#city")||el.querySelector?.("#district")||el.querySelector?.("#area")) return assign(el,2);
       if(el.id==="mobile-description-section"||el.querySelector?.("#description")||el.querySelector?.("#contact")) return assign(el,3);
       if(el.id==="mobile-image-section"||el.id==="adjustment-section"||el.querySelector?.("#image-upload-story")) return assign(el,4);
