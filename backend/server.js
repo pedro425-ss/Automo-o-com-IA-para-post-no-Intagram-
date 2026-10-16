@@ -1956,7 +1956,7 @@ function extractListingData($, pageUrl) {
   };
 }
 
-app.post("/analisar-imovel", optionalAccessGate, async (req, res) => {
+app.post("/analisar-imovel", async (req, res) => {
   try {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ erro: "URL não enviada" });
