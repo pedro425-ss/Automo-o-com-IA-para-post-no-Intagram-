@@ -1,450 +1,519 @@
 (() => {
-  const DESKTOP_QUERY = "(min-width: 900px)";
+  const DESKTOP = "(min-width: 900px)";
   let desktopStep = 1;
 
-  const STEP_META = [
-    { title: "Buscar imóvel", short: "Buscar", hint: "Cole o anúncio ou abra um imóvel salvo." },
-    { title: "Dados principais", short: "Dados", hint: "Escolha o perfil e revise as informações principais." },
-    { title: "Descrição e contato", short: "Descrição", hint: "Refine o texto e os canais de contato." },
-    { title: "Imagem e enquadramento", short: "Imagem", hint: "Ajuste foto, corte, zoom e composição." },
-    { title: "Marca e QR Code", short: "Marca", hint: "Logo, identidade, link e QR Code." },
-    { title: "Revisar e publicar", short: "Publicar", hint: "Confira o resultado e exporte seus Stories." }
+  const STEPS = [
+    ["Buscar imóvel","Buscar","Cole o link do anúncio ou abra um imóvel salvo."],
+    ["Dados do imóvel","Dados","Revise perfil, modelo, preço e localização."],
+    ["Descrição","Texto","Ajuste descrição e contato."],
+    ["Design e imagens","Design","Enquadramento, fotos e composição."],
+    ["Marca e extras","Marca","Logo, QR Code e identidade."],
+    ["Gerar e baixar","Gerar","Revise e exporte os Stories."]
   ];
 
   const $ = (id) => document.getElementById(id);
 
-  function injectStyles() {
-    if ($("professional-ui-styles")) return;
-    const style = document.createElement("style");
-    style.id = "professional-ui-styles";
-    style.textContent = `
+  function injectStyles(){
+    if($("professional-ui-styles")) return;
+    const style=document.createElement("style");
+    style.id="professional-ui-styles";
+    style.textContent=`
       :root{
-        --pro-bg:#0c0f0d;
-        --pro-surface:#151914;
-        --pro-surface-2:#1b211a;
-        --pro-border:rgba(255,255,255,.075);
-        --pro-border-strong:rgba(255,255,255,.13);
-        --pro-text:#f7f8f5;
-        --pro-muted:#929a91;
-        --pro-accent:#c6a15b;
-        --pro-accent-soft:rgba(198,161,91,.14);
-        --pro-success:#557b4a;
+        --app-gold:#d8a23b;
+        --app-gold-soft:#f7e6bd;
+        --app-green:#4f7f43;
+        --app-ink:#121820;
+        --app-muted:#707782;
+        --app-line:#e5e8eb;
+        --app-paper:#f6f7f8;
+        --app-white:#ffffff;
+        --app-dark:#0d1215;
+        --app-dark-2:#141a1e;
+        --app-dark-line:rgba(255,255,255,.09);
       }
 
-      body{
-        background:
-          radial-gradient(circle at 12% 0%,rgba(198,161,91,.055),transparent 24%),
-          radial-gradient(circle at 90% 6%,rgba(76,112,65,.055),transparent 22%),
-          var(--pro-bg)!important;
-      }
-
-      .panel{
-        border:1px solid var(--pro-border)!important;
-        background:linear-gradient(180deg,rgba(24,28,23,.96),rgba(15,18,15,.98))!important;
-        box-shadow:0 24px 80px rgba(0,0,0,.34)!important;
-      }
-      .panel-header{
-        padding-bottom:16px!important;
-        border-bottom:1px solid var(--pro-border)!important;
-      }
-      .panel-title{
-        letter-spacing:-.035em!important;
-        font-weight:850!important;
-      }
-      .panel-subtitle{
-        color:var(--pro-muted)!important;
-      }
-
-      .section,
-      .story-template-panel,
-      .workflow-panel,
-      .property-panel,
-      .logo-library,
-      .cloud-profile-box,
-      .export-formats-box,
-      .story-set-box{
-        border-color:var(--pro-border)!important;
-        background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018))!important;
-        box-shadow:none!important;
-      }
-
-      .input,.textarea,.select,.file,
-      .workflow-select,.realty-profile-select{
-        background:rgba(4,7,5,.42)!important;
-        border-color:var(--pro-border-strong)!important;
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;
-      }
-      .input:focus,.textarea:focus,.select:focus,.workflow-select:focus,.realty-profile-select:focus{
-        border-color:rgba(198,161,91,.58)!important;
-        box-shadow:0 0 0 3px rgba(198,161,91,.10)!important;
-        outline:none!important;
-      }
-      .label{color:#d8ddd6!important}
-      .hint{color:var(--pro-muted)!important}
-
-      .btn,.workflow-btn,.property-btn,.story-extra-btn,.logo-card-btn,.cloud-profile-btn,.export-format-btn,.export-package-btn{
-        transition:transform .15s ease,filter .15s ease,border-color .15s ease!important;
-      }
-      .btn:hover,.workflow-btn:hover,.property-btn:hover,.story-extra-btn:hover,.logo-card-btn:hover,.cloud-profile-btn:hover,.export-format-btn:hover,.export-package-btn:hover{
-        filter:brightness(1.06);
-      }
-
-      #desktop-preview-mount{
-        position:sticky!important;
-        top:24px!important;
-        align-self:start!important;
-        min-height:calc(100vh - 48px);
-        padding:20px!important;
-        border:1px solid var(--pro-border)!important;
-        border-radius:28px!important;
-        background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.012))!important;
-      }
-      #desktop-preview-mount::before{
-        content:"PRÉVIA AO VIVO";
-        position:absolute;top:14px;left:18px;
-        font-size:10px;font-weight:900;letter-spacing:.16em;color:rgba(255,255,255,.38);
-      }
-      #desktop-preview-mount .story-preview-shell{
-        margin-top:18px;
-        box-shadow:0 32px 90px rgba(0,0,0,.48)!important;
-      }
-
-      .desktop-wizard{display:none}
-      .desktop-wizard-footer{display:none}
+      #app-sidebar,#mobile-app-header,#mobile-bottom-nav{display:none}
 
       @media(min-width:900px){
-        body.desktop-wizard-active .max-w-6xl{
-          max-width:1240px!important;
-          grid-template-columns:minmax(0,1.05fr) minmax(390px,.95fr)!important;
-          gap:24px!important;
+        html,body{background:#eef1f3!important;color:var(--app-ink)!important}
+        body.desktop-wizard-active{
+          padding:0!important;
+          min-height:100vh;
+          background:#eef1f3!important;
+        }
+
+        body.desktop-wizard-active>.max-w-6xl{
+          max-width:none!important;
+          width:calc(100% - 205px)!important;
+          min-height:100vh!important;
+          margin:0 0 0 205px!important;
+          padding:28px 28px 36px!important;
+          grid-template-columns:minmax(0,1.55fr) minmax(330px,.62fr)!important;
+          gap:20px!important;
           align-items:start!important;
         }
 
+        #app-sidebar{
+          display:flex;
+          position:fixed;inset:0 auto 0 0;z-index:500;
+          width:205px;padding:22px 16px 18px;
+          flex-direction:column;
+          background:linear-gradient(180deg,#111820,#0b1015);
+          color:white;border-right:1px solid rgba(255,255,255,.06);
+          box-shadow:12px 0 35px rgba(19,29,38,.08);
+        }
+        .app-brand{
+          display:flex;align-items:center;gap:10px;
+          padding:2px 7px 22px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)
+        }
+        .app-brand img{width:42px;height:42px;border-radius:11px}
+        .app-brand-copy strong{display:block;font-size:14px;letter-spacing:.02em}
+        .app-brand-copy span{display:block;margin-top:2px;font-size:8px;letter-spacing:.22em;color:#d8a23b}
+        .app-side-primary{
+          min-height:42px;margin:4px 0 13px;border:0;border-radius:10px;
+          background:linear-gradient(135deg,#9d6b1d,#c98f2d);color:white;
+          font-size:11px;font-weight:900;cursor:pointer
+        }
+        .app-side-menu{display:grid;gap:4px}
+        .app-side-item{
+          display:flex;align-items:center;gap:10px;width:100%;min-height:40px;
+          padding:8px 10px;border:0;border-radius:9px;background:transparent;color:#c8cdd2;
+          font-size:10px;font-weight:750;text-align:left;cursor:pointer
+        }
+        .app-side-item:hover,.app-side-item.is-active{background:rgba(255,255,255,.07);color:#fff}
+        .app-side-item b{
+          display:grid;place-items:center;width:22px;height:22px;border-radius:7px;
+          background:rgba(255,255,255,.06);font-size:11px
+        }
+        .app-side-plan{
+          margin-top:auto;padding:11px;border:1px solid rgba(216,162,59,.22);border-radius:11px;
+          background:rgba(216,162,59,.08)
+        }
+        .app-side-plan small{display:block;color:#b6bdc3;font-size:8px}
+        .app-side-plan strong{display:block;margin-top:4px;color:#f5d489;font-size:11px}
+
         body.desktop-wizard-active .panel{
-          padding:22px!important;
-          min-height:calc(100vh - 48px);
+          padding:0!important;border:0!important;border-radius:18px!important;
+          background:transparent!important;box-shadow:none!important;color:var(--app-ink)!important;
+          min-width:0;
+        }
+        body.desktop-wizard-active .panel-header{
+          min-height:70px;margin:0 0 10px;padding:0 4px 12px!important;
+          border-bottom:1px solid #dde1e4!important;
+        }
+        body.desktop-wizard-active .panel-title{
+          color:#111820!important;font-size:27px!important;line-height:1.05!important;font-weight:900!important;
+          letter-spacing:-.04em!important
+        }
+        body.desktop-wizard-active .panel-subtitle{
+          margin-top:6px!important;color:#727a83!important;font-size:11px!important
         }
 
         .desktop-wizard{
-          display:block;
-          margin:16px 0 18px;
-          padding:10px;
-          border:1px solid var(--pro-border);
-          border-radius:18px;
-          background:rgba(0,0,0,.16);
+          display:block!important;margin:0 0 14px;padding:0!important;border:0!important;background:transparent!important;
         }
-        .desktop-wizard-top{
-          display:flex;align-items:center;justify-content:space-between;gap:14px;
-          padding:3px 4px 10px;
-        }
-        .desktop-wizard-kicker{
-          font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--pro-accent)
-        }
-        .desktop-wizard-title{margin-top:3px;font-size:17px;font-weight:900;letter-spacing:-.025em}
-        .desktop-wizard-count{
-          flex:0 0 auto;padding:6px 9px;border-radius:999px;
-          background:var(--pro-accent-soft);border:1px solid rgba(198,161,91,.22);
-          color:#e8cb91;font-size:10px;font-weight:900
-        }
+        .desktop-wizard-top{display:none!important}
         .desktop-wizard-tabs{
-          display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;
+          display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;
+          border:1px solid #e2e5e8;border-radius:12px;overflow:hidden;background:#fff
         }
         .desktop-wizard-tab{
-          position:relative;min-height:48px;padding:7px 5px;border-radius:11px;
-          border:1px solid transparent;background:rgba(255,255,255,.025);
-          color:#899188;font-size:9px;font-weight:850;cursor:pointer;
+          min-height:55px!important;border:0!important;border-right:1px solid #eceef0!important;
+          border-radius:0!important;background:#fff!important;color:#68717a!important;
+          font-size:9px!important;font-weight:800!important;cursor:pointer!important
         }
+        .desktop-wizard-tab:last-child{border-right:0!important}
         .desktop-wizard-tab span{
-          display:flex;align-items:center;justify-content:center;
-          width:20px;height:20px;margin:0 auto 3px;border-radius:999px;
-          background:rgba(255,255,255,.06);color:#aeb5ad;font-size:9px
+          display:inline-grid!important;place-items:center!important;width:22px!important;height:22px!important;
+          margin:0 6px 0 0!important;border-radius:999px!important;background:#e8ebee!important;
+          color:#6f7780!important;font-size:9px!important
         }
-        .desktop-wizard-tab.is-active{
-          color:#fff;background:rgba(198,161,91,.10);border-color:rgba(198,161,91,.23);
-        }
-        .desktop-wizard-tab.is-active span{
-          background:var(--pro-accent);color:#151710;
-        }
-        .desktop-wizard-tab.is-complete{color:#b5bdaf}
-        .desktop-wizard-tab.is-complete span{background:rgba(85,123,74,.7);color:#fff}
+        .desktop-wizard-tab.is-active{background:#fffaf1!important;color:#171b20!important}
+        .desktop-wizard-tab.is-active span{background:var(--app-gold)!important;color:white!important}
+        .desktop-wizard-tab.is-complete span{background:#aeb6bd!important;color:white!important}
 
-        body.desktop-wizard-active .panel>[data-desktop-step]{
-          display:none!important;
-        }
+        body.desktop-wizard-active .panel>[data-desktop-step]{display:none!important}
         body.desktop-wizard-active .panel>[data-desktop-step].desktop-step-active{
-          display:block!important;
-          animation:professionalStepIn .18s ease-out;
+          display:block!important;animation:stepIn .18s ease-out
         }
 
-        .desktop-wizard-footer{
-          position:sticky;bottom:10px;z-index:90;
-          display:flex;align-items:center;justify-content:space-between;gap:10px;
-          margin-top:16px;padding:9px;
-          border:1px solid var(--pro-border-strong);border-radius:16px;
-          background:rgba(15,18,15,.94);backdrop-filter:blur(14px);
-          box-shadow:0 18px 44px rgba(0,0,0,.32);
-        }
-        .desktop-wizard-footer-copy{
-          min-width:0;flex:1;padding-left:4px;
-        }
-        .desktop-wizard-footer-title{font-size:11px;font-weight:900}
-        .desktop-wizard-footer-hint{margin-top:2px;font-size:9px;color:var(--pro-muted)}
-        .desktop-wizard-footer-actions{display:flex;gap:7px}
-        .desktop-wizard-action{
-          min-height:42px;padding:8px 14px;border-radius:11px;border:1px solid var(--pro-border-strong);
-          font-size:11px;font-weight:900;cursor:pointer
-        }
-        .desktop-wizard-back{background:rgba(255,255,255,.045);color:#fff}
-        .desktop-wizard-next{background:var(--pro-success);border-color:var(--pro-success);color:#fff}
-        .desktop-wizard-action:disabled{opacity:.35;cursor:default}
-
+        body.desktop-wizard-active .section,
+        body.desktop-wizard-active .story-template-panel,
         body.desktop-wizard-active .workflow-panel,
-        body.desktop-wizard-active .property-panel{
-          margin-top:10px!important;
+        body.desktop-wizard-active .property-panel,
+        body.desktop-wizard-active .logo-library,
+        body.desktop-wizard-active .cloud-profile-box,
+        body.desktop-wizard-active .export-formats-box,
+        body.desktop-wizard-active .story-set-box,
+        body.desktop-wizard-active .auto-brand-box{
+          margin-top:10px!important;padding:15px!important;border:1px solid #e2e5e8!important;
+          border-radius:13px!important;background:#fff!important;color:#171b20!important;
+          box-shadow:0 3px 12px rgba(19,28,36,.035)!important
         }
-
-        body.desktop-wizard-active .story-template-grid{
-          grid-template-columns:repeat(5,minmax(0,1fr))!important;
+        body.desktop-wizard-active .section-title,
+        body.desktop-wizard-active .story-template-title,
+        body.desktop-wizard-active .workflow-title,
+        body.desktop-wizard-active .property-title,
+        body.desktop-wizard-active .logo-library-title,
+        body.desktop-wizard-active .cloud-profile-title,
+        body.desktop-wizard-active .export-formats-title,
+        body.desktop-wizard-active .story-set-title,
+        body.desktop-wizard-active .auto-brand-title{
+          color:#171b20!important;font-size:13px!important;font-weight:900!important
+        }
+        body.desktop-wizard-active .label,
+        body.desktop-wizard-active .adjust-control-title,
+        body.desktop-wizard-active .framing-title,
+        body.desktop-wizard-active .story-extra-title{
+          color:#30363c!important
+        }
+        body.desktop-wizard-active .hint,
+        body.desktop-wizard-active .story-template-subtitle,
+        body.desktop-wizard-active .workflow-subtitle,
+        body.desktop-wizard-active .property-subtitle,
+        body.desktop-wizard-active .logo-library-subtitle,
+        body.desktop-wizard-active .cloud-profile-subtitle,
+        body.desktop-wizard-active .export-formats-subtitle,
+        body.desktop-wizard-active .story-set-copy{
+          color:#7b838b!important;opacity:1!important
+        }
+        body.desktop-wizard-active .input,
+        body.desktop-wizard-active .textarea,
+        body.desktop-wizard-active .select,
+        body.desktop-wizard-active .file,
+        body.desktop-wizard-active .workflow-select,
+        body.desktop-wizard-active .realty-profile-select{
+          min-height:44px!important;border:1px solid #dfe3e6!important;border-radius:10px!important;
+          background:#fff!important;color:#1d2329!important;box-shadow:none!important
+        }
+        body.desktop-wizard-active .input::placeholder,
+        body.desktop-wizard-active .textarea::placeholder{color:#a2a8ae!important}
+        body.desktop-wizard-active .input:focus,
+        body.desktop-wizard-active .textarea:focus,
+        body.desktop-wizard-active .select:focus{
+          border-color:#d8a23b!important;box-shadow:0 0 0 3px rgba(216,162,59,.11)!important
+        }
+        body.desktop-wizard-active .check{color:#30363c!important}
+        body.desktop-wizard-active .adjust-control,
+        body.desktop-wizard-active .framing-block,
+        body.desktop-wizard-active .story-extra-control{
+          background:#f7f8f9!important;border-color:#e8ebed!important
         }
 
         body.desktop-wizard-active .realty-profile-controls{
-          margin-top:2px!important;
+          border:0!important;background:#f7f8f9!important
         }
-      }
+        body.desktop-wizard-active .realty-profile-label{color:#5d646b!important}
+        body.desktop-wizard-active .realty-profile-select{
+          background:white!important
+        }
+        body.desktop-wizard-active .realty-profile-summary{background:#eef1f3!important;color:#697079!important}
 
-      @keyframes professionalStepIn{
-        from{opacity:.55;transform:translateY(5px)}
-        to{opacity:1;transform:none}
+        body.desktop-wizard-active .story-template-button{
+          background:#f6f7f8!important;color:#2c3339!important;border-color:#e5e8eb!important
+        }
+        body.desktop-wizard-active .story-template-button.is-active{
+          background:#fff8e8!important;border-color:#d8a23b!important;color:#7b5316!important
+        }
+        body.desktop-wizard-active .story-template-current{
+          background:#fff5dc!important;border-color:#ead09c!important;color:#7c581c!important
+        }
+
+        body.desktop-wizard-active .btn-green,
+        body.desktop-wizard-active .property-btn-primary,
+        body.desktop-wizard-active .workflow-btn.primary{
+          background:#4f7f43!important;color:white!important;border-color:#4f7f43!important
+        }
+        body.desktop-wizard-active .btn-gold,
+        body.desktop-wizard-active .export-package-btn{
+          background:linear-gradient(135deg,#c38a2b,#e0ad4a)!important;color:white!important;border-color:#c89335!important
+        }
+        body.desktop-wizard-active .btn-dark{background:#171d22!important;color:white!important}
+
+        #desktop-preview-mount{
+          position:sticky!important;top:24px!important;align-self:start!important;
+          min-height:calc(100vh - 48px)!important;padding:16px!important;border:0!important;border-radius:16px!important;
+          background:linear-gradient(180deg,#111820,#0b1116)!important;
+          box-shadow:0 15px 40px rgba(26,37,45,.15)!important
+        }
+        #desktop-preview-mount::before{
+          content:"Prévia do modelo";display:block;position:static!important;margin:0 0 3px 2px!important;
+          color:white!important;font-size:12px!important;font-weight:900!important;letter-spacing:0!important
+        }
+        #desktop-preview-mount::after{
+          content:"Veja em tempo real como ficará seu Story.";display:block;margin:0 0 14px 2px;
+          color:#89939c;font-size:9px
+        }
+        #desktop-preview-mount .story-preview-shell{
+          width:min(100%,300px)!important;height:auto!important;aspect-ratio:9/16!important;
+          margin:0 auto!important;border-radius:17px!important;box-shadow:0 16px 40px rgba(0,0,0,.35)!important
+        }
+
+        .desktop-wizard-footer{
+          position:sticky!important;bottom:12px!important;z-index:90!important;
+          display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
+          margin-top:12px!important;padding:8px 9px!important;border:1px solid #dde1e4!important;border-radius:12px!important;
+          background:rgba(255,255,255,.95)!important;box-shadow:0 12px 32px rgba(27,36,43,.09)!important;backdrop-filter:blur(12px)
+        }
+        .desktop-wizard-footer-title{font-size:10px!important;color:#20262c!important}
+        .desktop-wizard-footer-hint{font-size:8px!important;color:#7e868d!important}
+        .desktop-wizard-action{
+          min-height:40px!important;padding:8px 14px!important;border-radius:9px!important;border:1px solid #dfe3e6!important;
+          font-size:10px!important;font-weight:900!important
+        }
+        .desktop-wizard-back{background:#fff!important;color:#4b535a!important}
+        .desktop-wizard-next{background:#4f7f43!important;border-color:#4f7f43!important;color:white!important}
       }
 
       @media(max-width:899px){
-        body.mobile-wizard-active{
-          background:
-            radial-gradient(circle at 12% 0%,rgba(198,161,91,.06),transparent 25%),
-            #0b0e0c!important;
+        html,body{background:#090d10!important}
+        body.mobile-wizard-active{padding-top:70px!important;padding-bottom:112px!important;background:#090d10!important}
+        #mobile-app-header{
+          display:flex;position:fixed;inset:0 0 auto 0;z-index:250;height:62px;
+          align-items:center;justify-content:space-between;padding:8px 14px;
+          background:rgba(10,14,17,.97);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(14px)
         }
+        .mobile-brand{display:flex;align-items:center;gap:9px}
+        .mobile-brand img{width:36px;height:36px;border-radius:10px}
+        .mobile-brand strong{display:block;font-size:12px;letter-spacing:.02em}
+        .mobile-brand span{display:block;margin-top:1px;color:#d8a23b;font-size:7px;letter-spacing:.18em}
+        .mobile-header-actions{display:flex;gap:7px}
+        .mobile-header-btn{
+          display:grid;place-items:center;width:36px;height:36px;border:1px solid rgba(255,255,255,.07);border-radius:10px;
+          background:rgba(255,255,255,.035);color:white;font-size:14px
+        }
+
         body.mobile-wizard-active .panel{
-          background:linear-gradient(180deg,rgba(24,28,23,.98),rgba(13,16,13,.99))!important;
-          border:1px solid rgba(255,255,255,.065)!important;
-          box-shadow:none!important;
+          border:0!important;border-radius:0!important;padding:9px!important;background:#090d10!important;box-shadow:none!important
         }
+        body.mobile-wizard-active .panel-header{padding:4px 4px 10px!important;border:0!important}
+        body.mobile-wizard-active .panel-title{
+          font-size:21px!important;letter-spacing:-.035em!important;color:white!important
+        }
+        body.mobile-wizard-active .panel-subtitle{font-size:10px!important;color:#8e989f!important}
+
         body.mobile-wizard-active .mobile-wizard-progress{
-          background:rgba(18,22,18,.97)!important;
-          border-color:rgba(255,255,255,.08)!important;
-          box-shadow:0 10px 28px rgba(0,0,0,.28)!important;
+          position:relative!important;top:auto!important;margin:0 0 8px!important;padding:9px 10px!important;
+          border-radius:12px!important;background:#10161a!important;border:1px solid rgba(255,255,255,.07)!important;
+          box-shadow:none!important
         }
-        body.mobile-wizard-active .mobile-wizard-step-title{
-          letter-spacing:-.015em;
-        }
-        body.mobile-wizard-active .mobile-wizard-bar{
-          left:7px!important;right:7px!important;
-          background:rgba(15,18,15,.96)!important;
-          border-color:rgba(255,255,255,.09)!important;
-          box-shadow:0 18px 46px rgba(0,0,0,.42)!important;
-        }
-        body.mobile-wizard-active .mobile-wizard-btn{
-          min-height:46px!important;
-          border-radius:12px!important;
-        }
-        body.mobile-wizard-active .mobile-wizard-next{
-          background:#557b4a!important;
-        }
-        body.mobile-wizard-active .mobile-wizard-preview{
-          background:rgba(198,161,91,.12)!important;
-          border-color:rgba(198,161,91,.24)!important;
-          color:#e8cb91!important;
-        }
+        body.mobile-wizard-active .mobile-wizard-step-title{font-size:12px!important}
+        body.mobile-wizard-active .mobile-wizard-step-count{font-size:9px!important;color:#e3bd70!important}
+        body.mobile-wizard-active .mobile-wizard-track{height:3px!important;background:rgba(255,255,255,.08)!important}
+        body.mobile-wizard-active .mobile-wizard-track>span{background:#d8a23b!important}
+
         body.mobile-wizard-active .panel>.section.mobile-step-active,
-        body.mobile-wizard-active .story-template-panel{
-          border:1px solid rgba(255,255,255,.07)!important;
-          background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018))!important;
-          box-shadow:none!important;
+        body.mobile-wizard-active .story-template-panel,
+        body.mobile-wizard-active.mobile-secondary-open .workflow-panel,
+        body.mobile-wizard-active.mobile-secondary-open .property-panel{
+          margin-top:7px!important;padding:11px!important;border:1px solid rgba(255,255,255,.075)!important;
+          border-radius:13px!important;background:linear-gradient(180deg,#12181c,#0f1518)!important;color:white!important;box-shadow:none!important
         }
+        body.mobile-wizard-active .section-title,
+        body.mobile-wizard-active .story-template-title{font-size:12px!important;color:#f0d08b!important}
         body.mobile-wizard-active .input,
         body.mobile-wizard-active .textarea,
         body.mobile-wizard-active .select,
-        body.mobile-wizard-active .file{
-          background:rgba(5,8,6,.48)!important;
-          border-color:rgba(255,255,255,.10)!important;
+        body.mobile-wizard-active .file,
+        body.mobile-wizard-active .realty-profile-select{
+          min-height:42px!important;height:auto!important;border:1px solid rgba(255,255,255,.09)!important;
+          border-radius:10px!important;background:#1a2118!important;color:#fff!important;font-size:13px!important
         }
+        body.mobile-wizard-active .textarea{min-height:68px!important}
+        body.mobile-wizard-active .label{font-size:10px!important;color:#d8ddda!important}
+        body.mobile-wizard-active .hint{font-size:9px!important;color:#859096!important}
+
+        body.mobile-wizard-active .story-template-grid{gap:6px!important}
+        body.mobile-wizard-active .story-template-button{
+          min-height:44px!important;border-radius:10px!important;background:#1a2118!important;border-color:rgba(255,255,255,.09)!important;font-size:10px!important
+        }
+        body.mobile-wizard-active .story-template-button.is-active{
+          background:linear-gradient(135deg,#6f4a17,#8d621f)!important;border-color:#d8a23b!important;color:#f5d89e!important
+        }
+        body.mobile-wizard-active .realty-profile-controls{
+          background:#0e1417!important;border-color:rgba(255,255,255,.06)!important
+        }
+        body.mobile-wizard-active .realty-profile-summary{background:rgba(255,255,255,.04)!important}
+
         body.mobile-wizard-active #mobile-secondary-toggle{
-          background:rgba(255,255,255,.028)!important;
-          border-color:rgba(255,255,255,.07)!important;
+          min-height:40px!important;border-radius:11px!important;background:#11171a!important;border-color:rgba(255,255,255,.07)!important;color:#e7c982!important
+        }
+
+        body.mobile-wizard-active .mobile-wizard-bar{
+          left:8px!important;right:8px!important;bottom:61px!important;z-index:260!important;
+          padding:6px!important;border-radius:14px!important;background:rgba(15,20,23,.97)!important;
+          border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 14px 35px rgba(0,0,0,.35)!important
+        }
+        body.mobile-wizard-active .mobile-wizard-btn{min-height:43px!important;border-radius:10px!important;font-size:10px!important}
+        body.mobile-wizard-active .mobile-wizard-next{
+          background:linear-gradient(135deg,#c58b2b,#e1ae4c)!important;color:#18130b!important;border-color:#d39a36!important
+        }
+        body.mobile-wizard-active .mobile-wizard-preview{
+          background:#241d12!important;border-color:rgba(216,162,59,.28)!important;color:#f0cb7e!important
+        }
+
+        #mobile-bottom-nav{
+          display:grid;position:fixed;left:0;right:0;bottom:0;z-index:255;
+          grid-template-columns:repeat(5,1fr);height:57px;padding:5px 8px max(5px,env(safe-area-inset-bottom));
+          background:rgba(8,12,15,.98);border-top:1px solid rgba(255,255,255,.07);backdrop-filter:blur(14px)
+        }
+        .mobile-bottom-item{
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+          border:0;background:transparent;color:#828c93;font-size:7px;font-weight:800
+        }
+        .mobile-bottom-item b{font-size:14px;line-height:1}
+        .mobile-bottom-item.is-active{color:#e8b85b}
+        .mobile-bottom-item.mobile-plus b{
+          display:grid;place-items:center;width:36px;height:36px;margin-top:-16px;border-radius:50%;
+          background:linear-gradient(135deg,#d4952f,#f0bd58);color:#17120a;font-size:20px;
+          box-shadow:0 8px 20px rgba(216,162,59,.22)
         }
       }
+
+      @keyframes stepIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}
     `;
     document.head.appendChild(style);
   }
 
-  function isDirectPanelChild(el) {
-    return el && el.parentElement?.classList?.contains("panel");
-  }
-
-  function assign(el, step) {
-    if (!el || !isDirectPanelChild(el)) return;
-    el.dataset.desktopStep = String(step);
-  }
-
-  function classifyDesktop() {
-    const panel = document.querySelector(".panel");
-    if (!panel) return;
-
-    [...panel.children].forEach((el) => {
-      if (el.classList.contains("panel-header") || el.id === "desktop-wizard" || el.id === "desktop-wizard-footer") return;
-
-      if (el.id === "workflow-panel" || el.id === "property-panel" || el.querySelector?.("#imovel-url")) {
-        assign(el, 1); return;
-      }
-
-      if (el.id === "story-template-panel" || el.querySelector?.("#badge") || el.querySelector?.("#title") || el.querySelector?.("#price") || el.querySelector?.("#city") || el.querySelector?.("#district") || el.querySelector?.("#area")) {
-        assign(el, 2); return;
-      }
-
-      if (el.id === "mobile-description-section" || el.querySelector?.("#description") || el.querySelector?.("#contact")) {
-        assign(el, 3); return;
-      }
-
-      if (el.id === "mobile-image-section" || el.id === "adjustment-section" || el.querySelector?.("#image-upload-story")) {
-        assign(el, 4); return;
-      }
-
-      if (
-        el.id === "mobile-logo-section" ||
-        el.id === "story-advanced-section" ||
-        el.id === "logo-library" ||
-        el.id === "cloud-profile-box" ||
-        el.id === "auto-brand-box" ||
-        el.querySelector?.("#logo-upload-story") ||
-        el.querySelector?.("#more-photos-url")
-      ) {
-        assign(el, 5); return;
-      }
-
-      if (
-        el.id === "story-set-box" ||
-        el.id === "export-formats-box" ||
-        el.querySelector?.("#download-story") ||
-        el.querySelector?.("#post-story") ||
-        el.querySelector?.("#export-package")
-      ) {
-        assign(el, 6); return;
-      }
-
-      if (el.classList.contains("section") || /panel|box|library/.test(el.className || "")) {
-        assign(el, 6);
-      }
-    });
-  }
-
-  function createDesktopWizard() {
-    const panel = document.querySelector(".panel");
-    if (!panel || $("desktop-wizard")) return;
-
-    const nav = document.createElement("div");
-    nav.id = "desktop-wizard";
-    nav.className = "desktop-wizard";
-    nav.innerHTML = `
-      <div class="desktop-wizard-top">
-        <div>
-          <div class="desktop-wizard-kicker">Fluxo de criação</div>
-          <div id="desktop-wizard-title" class="desktop-wizard-title">Buscar imóvel</div>
+  function createChrome(){
+    if(!$("app-sidebar")){
+      const side=document.createElement("aside");
+      side.id="app-sidebar";
+      side.innerHTML=`
+        <div class="app-brand">
+          <img src="/pwa-icon-pro-192.png" alt="Story Imóveis">
+          <div class="app-brand-copy"><strong>STORY</strong><span>IMÓVEIS</span></div>
         </div>
-        <div id="desktop-wizard-count" class="desktop-wizard-count">Etapa 1 de 6</div>
-      </div>
+        <button class="app-side-primary" type="button" data-side-step="1">＋ Novo Story</button>
+        <div class="app-side-menu">
+          <button class="app-side-item is-active" type="button" data-side-step="1"><b>⌕</b>Novo Story</button>
+          <button class="app-side-item" type="button" data-side-step="6"><b>▣</b>Meus Stories</button>
+          <button class="app-side-item" type="button" data-side-step="2"><b>◇</b>Modelos</button>
+          <button class="app-side-item" type="button" data-side-step="5"><b>▦</b>Minhas imobiliárias</button>
+          <button class="app-side-item" type="button" data-side-step="4"><b>?</b>Tutoriais</button>
+          <button class="app-side-item" type="button" data-side-step="5"><b>⚙</b>Configurações</button>
+        </div>
+        <div class="app-side-plan"><small>PLANO ATUAL</small><strong>★ Profissional</strong></div>
+      `;
+      document.body.appendChild(side);
+      side.addEventListener("click",(e)=>{
+        const b=e.target.closest("[data-side-step]");
+        if(!b) return;
+        setDesktopStep(Number(b.dataset.sideStep));
+      });
+    }
+
+    if(!$("mobile-app-header")){
+      const head=document.createElement("header");
+      head.id="mobile-app-header";
+      head.innerHTML=`
+        <div class="mobile-brand">
+          <img src="/pwa-icon-pro-192.png" alt="Story Imóveis">
+          <div><strong>STORY</strong><span>IMÓVEIS</span></div>
+        </div>
+        <div class="mobile-header-actions">
+          <button class="mobile-header-btn" type="button" aria-label="Notificações">♢</button>
+          <button class="mobile-header-btn" id="mobile-menu-button" type="button" aria-label="Menu">☰</button>
+        </div>
+      `;
+      document.body.appendChild(head);
+      $("mobile-menu-button")?.addEventListener("click",()=>document.getElementById("mobile-secondary-toggle")?.click());
+    }
+
+    if(!$("mobile-bottom-nav")){
+      const nav=document.createElement("nav");
+      nav.id="mobile-bottom-nav";
+      nav.innerHTML=`
+        <button class="mobile-bottom-item is-active" type="button" data-mobile-nav="1"><b>⌂</b>Início</button>
+        <button class="mobile-bottom-item" type="button" data-mobile-nav="6"><b>▯</b>Stories</button>
+        <button class="mobile-bottom-item mobile-plus" type="button" data-mobile-nav="1"><b>＋</b>Novo</button>
+        <button class="mobile-bottom-item" type="button" data-mobile-nav="2"><b>◇</b>Modelos</button>
+        <button class="mobile-bottom-item" type="button" id="mobile-more-nav"><b>•••</b>Mais</button>
+      `;
+      document.body.appendChild(nav);
+      nav.addEventListener("click",(e)=>{
+        const b=e.target.closest("[data-mobile-nav]");
+        if(!b) return;
+        const step=Number(b.dataset.mobileNav);
+        window.setMobileWizardStep?.(step);
+      });
+      $("mobile-more-nav")?.addEventListener("click",()=>document.getElementById("mobile-secondary-toggle")?.click());
+    }
+  }
+
+  function directPanelChild(el){return el && el.parentElement?.classList?.contains("panel")}
+  function assign(el,step){if(directPanelChild(el)) el.dataset.desktopStep=String(step)}
+
+  function classify(){
+    const panel=document.querySelector(".panel"); if(!panel) return;
+    [...panel.children].forEach(el=>{
+      if(el.classList.contains("panel-header")||el.id==="desktop-wizard"||el.id==="desktop-wizard-footer") return;
+      if(el.id==="workflow-panel"||el.id==="property-panel"||el.querySelector?.("#imovel-url")) return assign(el,1);
+      if(el.id==="story-template-panel"||el.querySelector?.("#badge")||el.querySelector?.("#title")||el.querySelector?.("#price")||el.querySelector?.("#city")||el.querySelector?.("#district")||el.querySelector?.("#area")) return assign(el,2);
+      if(el.id==="mobile-description-section"||el.querySelector?.("#description")||el.querySelector?.("#contact")) return assign(el,3);
+      if(el.id==="mobile-image-section"||el.id==="adjustment-section"||el.querySelector?.("#image-upload-story")) return assign(el,4);
+      if(el.id==="mobile-logo-section"||el.id==="story-advanced-section"||el.id==="logo-library"||el.id==="cloud-profile-box"||el.id==="auto-brand-box"||el.querySelector?.("#logo-upload-story")||el.querySelector?.("#more-photos-url")) return assign(el,5);
+      if(el.id==="story-set-box"||el.id==="export-formats-box"||el.querySelector?.("#download-story")||el.querySelector?.("#post-story")||el.querySelector?.("#export-package")) return assign(el,6);
+      if(el.classList.contains("section")||/panel|box|library/.test(el.className||"")) assign(el,6);
+    });
+  }
+
+  function createWizard(){
+    const panel=document.querySelector(".panel"); if(!panel||$("desktop-wizard")) return;
+    const nav=document.createElement("div");
+    nav.id="desktop-wizard"; nav.className="desktop-wizard";
+    nav.innerHTML=`
+      <div class="desktop-wizard-top"><div><div class="desktop-wizard-kicker">Fluxo de criação</div><div id="desktop-wizard-title" class="desktop-wizard-title"></div></div><div id="desktop-wizard-count" class="desktop-wizard-count"></div></div>
       <div class="desktop-wizard-tabs">
-        ${STEP_META.map((step, index) => `
-          <button type="button" class="desktop-wizard-tab" data-desktop-go="${index + 1}">
-            <span>${index + 1}</span>${step.short}
-          </button>
-        `).join("")}
-      </div>
-    `;
+        ${STEPS.map((s,i)=>`<button class="desktop-wizard-tab" type="button" data-desktop-go="${i+1}"><span>${i+1}</span>${s[1]}</button>`).join("")}
+      </div>`;
+    panel.querySelector(".panel-header")?.insertAdjacentElement("afterend",nav);
+    nav.addEventListener("click",e=>{const b=e.target.closest("[data-desktop-go]");if(b)setDesktopStep(Number(b.dataset.desktopGo))});
 
-    const header = panel.querySelector(".panel-header");
-    header?.insertAdjacentElement("afterend", nav);
-
-    nav.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-desktop-go]");
-      if (!button) return;
-      setDesktopStep(Number(button.dataset.desktopGo));
-    });
-
-    const footer = document.createElement("div");
-    footer.id = "desktop-wizard-footer";
-    footer.className = "desktop-wizard-footer";
-    footer.innerHTML = `
-      <div class="desktop-wizard-footer-copy">
-        <div id="desktop-footer-title" class="desktop-wizard-footer-title">Buscar imóvel</div>
-        <div id="desktop-footer-hint" class="desktop-wizard-footer-hint"></div>
-      </div>
-      <div class="desktop-wizard-footer-actions">
-        <button id="desktop-wizard-back" class="desktop-wizard-action desktop-wizard-back" type="button">Voltar</button>
-        <button id="desktop-wizard-next" class="desktop-wizard-action desktop-wizard-next" type="button">Próximo</button>
-      </div>
-    `;
-    panel.appendChild(footer);
-
-    $("desktop-wizard-back")?.addEventListener("click", () => setDesktopStep(desktopStep - 1));
-    $("desktop-wizard-next")?.addEventListener("click", () => setDesktopStep(desktopStep + 1));
+    const foot=document.createElement("div");
+    foot.id="desktop-wizard-footer"; foot.className="desktop-wizard-footer";
+    foot.innerHTML=`
+      <div class="desktop-wizard-footer-copy"><div id="desktop-footer-title" class="desktop-wizard-footer-title"></div><div id="desktop-footer-hint" class="desktop-wizard-footer-hint"></div></div>
+      <div class="desktop-wizard-footer-actions"><button id="desktop-wizard-back" class="desktop-wizard-action desktop-wizard-back" type="button">Voltar</button><button id="desktop-wizard-next" class="desktop-wizard-action desktop-wizard-next" type="button">Próximo →</button></div>`;
+    panel.appendChild(foot);
+    $("desktop-wizard-back")?.addEventListener("click",()=>setDesktopStep(desktopStep-1));
+    $("desktop-wizard-next")?.addEventListener("click",()=>setDesktopStep(desktopStep+1));
   }
 
-  function setDesktopStep(step) {
-    desktopStep = Math.max(1, Math.min(6, step));
-    classifyDesktop();
-
-    document.querySelectorAll(".panel>[data-desktop-step]").forEach((el) => {
-      el.classList.toggle("desktop-step-active", Number(el.dataset.desktopStep) === desktopStep);
+  function setDesktopStep(step){
+    desktopStep=Math.max(1,Math.min(6,step)); classify();
+    document.querySelectorAll(".panel>[data-desktop-step]").forEach(el=>el.classList.toggle("desktop-step-active",Number(el.dataset.desktopStep)===desktopStep));
+    const meta=STEPS[desktopStep-1];
+    if($("desktop-wizard-title")) $("desktop-wizard-title").textContent=meta[0];
+    if($("desktop-wizard-count")) $("desktop-wizard-count").textContent=`Etapa ${desktopStep} de 6`;
+    if($("desktop-footer-title")) $("desktop-footer-title").textContent=meta[0];
+    if($("desktop-footer-hint")) $("desktop-footer-hint").textContent=meta[2];
+    document.querySelectorAll(".desktop-wizard-tab").forEach(b=>{
+      const n=Number(b.dataset.desktopGo);b.classList.toggle("is-active",n===desktopStep);b.classList.toggle("is-complete",n<desktopStep)
     });
-
-    const meta = STEP_META[desktopStep - 1];
-    if ($("desktop-wizard-title")) $("desktop-wizard-title").textContent = meta.title;
-    if ($("desktop-wizard-count")) $("desktop-wizard-count").textContent = `Etapa ${desktopStep} de 6`;
-    if ($("desktop-footer-title")) $("desktop-footer-title").textContent = meta.title;
-    if ($("desktop-footer-hint")) $("desktop-footer-hint").textContent = meta.hint;
-
-    document.querySelectorAll(".desktop-wizard-tab").forEach((button) => {
-      const value = Number(button.dataset.desktopGo);
-      button.classList.toggle("is-active", value === desktopStep);
-      button.classList.toggle("is-complete", value < desktopStep);
-    });
-
-    const back = $("desktop-wizard-back");
-    const next = $("desktop-wizard-next");
-    if (back) back.disabled = desktopStep === 1;
-    if (next) {
-      next.style.display = desktopStep === 6 ? "none" : "";
-      next.textContent = desktopStep === 5 ? "Revisar" : "Próximo";
+    document.querySelectorAll(".app-side-item").forEach(b=>b.classList.toggle("is-active",Number(b.dataset.sideStep)===desktopStep));
+    if($("desktop-wizard-back")) $("desktop-wizard-back").disabled=desktopStep===1;
+    if($("desktop-wizard-next")){
+      $("desktop-wizard-next").style.display=desktopStep===6?"none":"";
+      $("desktop-wizard-next").textContent=desktopStep===5?"Revisar →":"Próximo →";
     }
-
-    if (window.matchMedia(DESKTOP_QUERY).matches) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if(matchMedia(DESKTOP).matches) scrollTo({top:0,behavior:"smooth"});
   }
 
-  function syncDesktopMode() {
-    const enabled = window.matchMedia(DESKTOP_QUERY).matches;
-    document.body.classList.toggle("desktop-wizard-active", enabled);
-    if (enabled) setDesktopStep(desktopStep);
+  function sync(){
+    const desk=matchMedia(DESKTOP).matches;
+    document.body.classList.toggle("desktop-wizard-active",desk);
+    if(desk)setDesktopStep(desktopStep);
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    injectStyles();
-    setTimeout(() => {
-      createDesktopWizard();
-      classifyDesktop();
-
-      const panel = document.querySelector(".panel");
-      if (panel) {
-        const observer = new MutationObserver(() => {
-          classifyDesktop();
-          if (window.matchMedia(DESKTOP_QUERY).matches) setDesktopStep(desktopStep);
-        });
-        observer.observe(panel, { childList: true });
-      }
-
-      const mq = window.matchMedia(DESKTOP_QUERY);
-      mq.addEventListener?.("change", syncDesktopMode);
-      syncDesktopMode();
-    }, 80);
+  document.addEventListener("DOMContentLoaded",()=>{
+    injectStyles();createChrome();
+    setTimeout(()=>{
+      createWizard();classify();
+      const panel=document.querySelector(".panel");
+      if(panel)new MutationObserver(()=>{classify();if(matchMedia(DESKTOP).matches)setDesktopStep(desktopStep)}).observe(panel,{childList:true});
+      matchMedia(DESKTOP).addEventListener?.("change",sync);
+      sync();
+    },100);
   });
 })();
