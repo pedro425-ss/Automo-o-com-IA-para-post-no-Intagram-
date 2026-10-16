@@ -93,6 +93,12 @@
       <div class="section-title">Layout, logo e mais fotos</div>
 
       <div class="field">
+        <label class="label" for="brand-name">Nome da imobiliária</label>
+        <input id="brand-name" class="input" maxlength="80" placeholder="Ex: Villela Imóveis" />
+        <div class="hint">Esse nome aparece na postagem e acompanha o perfil da imobiliária.</div>
+      </div>
+
+      <div class="field">
         <label class="label" for="more-photos-url">Link para mais fotos</label>
         <input id="more-photos-url" class="input" placeholder="Cole o link do anúncio ou da galeria" />
         <label class="check" style="margin-top:8px"><input id="show-qr" type="checkbox" checked> Mostrar QR Code no Story</label>
@@ -126,7 +132,7 @@
         <button id="save-branding-now" class="story-extra-btn" type="button">Salvar configurações</button>
         <button id="remove-saved-logo" class="story-extra-btn" type="button">Remover logo salvo</button>
       </div>
-      <div class="hint" style="margin-top:8px">Contato, link, posição do texto e configurações do logo ficam salvos neste navegador.</div>
+      <div class="hint" style="margin-top:8px">Nome da imobiliária, contato, link, posição do texto e configurações do logo ficam salvos neste navegador.</div>
     `;
 
     if (urlSection) panel.insertBefore(section, urlSection);
@@ -171,6 +177,15 @@
       setTimeout(() => reject(new Error("Tempo esgotado ao carregar QR Code")), 8000);
     });
     return qrLibPromise;
+  }
+
+  function applyBrandName() {
+    const input = byId("brand-name");
+    const footer = byId("story-brand-name");
+    const value = String(input?.value || "").trim();
+    if (footer) footer.textContent = value || "Sua Imobiliária";
+    saveSettings({ brandName: value });
+    try { if (typeof window.invalidateStoryCache === "function") window.invalidateStoryCache(); } catch {}
   }
 
   function applyContentPosition() {
@@ -400,6 +415,7 @@
   function restoreSettings() {
     const settings = readSettings();
     const contact = byId("contact");
+    const brandName = byId("brand-name");
     const morePhotos = byId("more-photos-url");
     const showQr = byId("show-qr");
     const contentY = byId("content-y");
@@ -407,6 +423,7 @@
     const logoPosition = byId("logo-position");
 
     if (contact && settings.contact && !contact.value) contact.value = settings.contact;
+    if (brandName && settings.brandName && !brandName.value) brandName.value = settings.brandName;
     if (morePhotos && settings.morePhotosUrl) morePhotos.value = settings.morePhotosUrl;
     if (showQr && typeof settings.showQr === "boolean") showQr.checked = settings.showQr;
     if (contentY && Number.isFinite(Number(settings.contentY))) contentY.value = String(settings.contentY);
@@ -414,6 +431,7 @@
     if (logoPosition && settings.logoPosition) logoPosition.value = settings.logoPosition;
 
     contact?.dispatchEvent(new Event("input", { bubbles: true }));
+    applyBrandName();
     applyContentPosition();
     applyLogoSettings();
     restoreSavedLogo();
@@ -422,6 +440,7 @@
 
   function setupEvents() {
     byId("contact")?.addEventListener("input", (event) => saveSettings({ contact: event.target.value }));
+    byId("brand-name")?.addEventListener("input", applyBrandName);
     byId("more-photos-url")?.addEventListener("input", updateQrCard);
     byId("show-qr")?.addEventListener("change", updateQrCard);
     byId("content-y")?.addEventListener("input", applyContentPosition);
@@ -434,6 +453,7 @@
 
     byId("save-branding-now")?.addEventListener("click", () => {
       saveSettings({
+        brandName: byId("brand-name")?.value || "",
         contact: byId("contact")?.value || "",
         morePhotosUrl: byId("more-photos-url")?.value || "",
         showQr: Boolean(byId("show-qr")?.checked),
