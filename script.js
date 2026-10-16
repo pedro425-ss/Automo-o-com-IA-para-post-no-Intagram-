@@ -174,10 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
       el?.addEventListener("change", updatePreviewAndInvalidate);
     });
 
-  [...featureInputs].forEach((el) => {
-    el.addEventListener("change", updatePreviewAndInvalidate);
-  });
-
   [posX, posY, zoom, imageFitSelect, containBgSelect].forEach((el) => {
     el?.addEventListener("input", updateImageAndInvalidate);
     el?.addEventListener("change", updateImageAndInvalidate);
@@ -318,9 +314,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (Math.abs(dragState.freeX) > 0.5) {
         nextX = dragState.startPctX + (dx / dragState.freeX) * 100;
+      } else if (Math.abs(dx) > 2) {
+        nextX = dragState.startPctX + dx * 0.18;
       }
       if (Math.abs(dragState.freeY) > 0.5) {
         nextY = dragState.startPctY + (dy / dragState.freeY) * 100;
+      } else if (Math.abs(dy) > 2) {
+        nextY = dragState.startPctY + dy * 0.18;
       }
 
       posX.value = String(Math.round(clamp(nextX, 0, 100)));
