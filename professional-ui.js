@@ -48,8 +48,8 @@
           min-height:100vh!important;
           margin:0 0 0 225px!important;
           padding:24px 0 34px!important;
-          grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr)!important;
-          gap:24px!important;
+          grid-template-columns:minmax(0,1.35fr) minmax(330px,.65fr)!important;
+          gap:22px!important;
           align-items:start!important;
         }
 
@@ -232,22 +232,42 @@
 
         #desktop-preview-mount{
           position:sticky!important;top:24px!important;align-self:start!important;
-          min-height:calc(100vh - 48px)!important;padding:18px 18px 22px!important;border:0!important;border-radius:18px!important;
-          background:linear-gradient(180deg,#111820,#0b1116)!important;
-          box-shadow:0 15px 40px rgba(26,37,45,.15)!important
+          min-height:auto!important;height:auto!important;padding:16px!important;border:1px solid rgba(255,255,255,.065)!important;border-radius:18px!important;
+          background:linear-gradient(180deg,#10171c,#0b1115)!important;
+          box-shadow:0 14px 36px rgba(22,31,38,.16)!important;
+          overflow:hidden!important
         }
         #desktop-preview-mount::before{
-          content:"Prévia do modelo";display:block;position:static!important;margin:0 0 3px 2px!important;
-          color:white!important;font-size:12px!important;font-weight:900!important;letter-spacing:0!important
+          content:"Prévia do Story";display:block;position:static!important;margin:0 0 2px 1px!important;
+          color:#fff!important;font-size:12px!important;line-height:1.1!important;font-weight:900!important;letter-spacing:-.01em!important
         }
         #desktop-preview-mount::after{
-          content:"Veja em tempo real como ficará seu Story.";display:block;margin:0 0 14px 2px;
-          color:#89939c;font-size:9px
+          content:"Visualização ao vivo";display:block;margin:0 0 10px 1px;
+          color:#7f8a92;font-size:8px!important;line-height:1.2!important
         }
         #desktop-preview-mount .story-preview-shell{
-          width:min(100%,360px)!important;height:auto!important;aspect-ratio:9/16!important;
-          margin:6px auto 0!important;border-radius:20px!important;box-shadow:0 20px 50px rgba(0,0,0,.38)!important;
+          width:min(100%,390px)!important;height:auto!important;aspect-ratio:9/16!important;
+          margin:8px auto 0!important;border-radius:18px!important;
+          box-shadow:0 18px 42px rgba(0,0,0,.36)!important;
           overflow:hidden!important;position:relative!important
+        }
+        #desktop-preview-mount #preview-format-switch{
+          display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;
+          width:100%!important;margin:0 0 10px!important;padding:4px!important;
+          border:1px solid rgba(255,255,255,.065)!important;border-radius:11px!important;
+          background:rgba(255,255,255,.035)!important
+        }
+        #desktop-preview-mount #preview-format-switch button{
+          min-height:34px!important;padding:6px 8px!important;border-radius:8px!important;
+          border:0!important;background:transparent!important;color:#8e989f!important;
+          font-size:9px!important;font-weight:900!important
+        }
+        #desktop-preview-mount #preview-format-switch button.is-active{
+          background:#4f7f43!important;color:#fff!important;box-shadow:none!important
+        }
+        #desktop-preview-mount .feed-preview-shell{
+          margin:8px auto 0!important;
+          max-width:100%!important;
         }
         #desktop-preview-mount .story-preview-stage{
           width:1080px!important;height:1920px!important;
@@ -274,14 +294,14 @@
         body.desktop-wizard-active>.max-w-6xl{
           width:calc(100vw - 214px)!important;
           margin-left:204px!important;
-          grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr)!important;
-          gap:18px!important;
+          grid-template-columns:minmax(0,1.28fr) minmax(315px,.72fr)!important;
+          gap:16px!important;
           padding-top:18px!important;
         }
         #app-sidebar{width:176px!important}
         body.desktop-wizard-active .panel{max-width:none!important}
-        #desktop-preview-mount{padding:14px!important}
-        #desktop-preview-mount .story-preview-shell{width:min(100%,330px)!important}
+        #desktop-preview-mount{padding:13px!important}
+        #desktop-preview-mount .story-preview-shell{width:min(100%,350px)!important}
         .desktop-wizard-tab{font-size:8px!important}
         .desktop-wizard-tab span{width:20px!important;height:20px!important;margin-right:4px!important}
       }
@@ -585,8 +605,8 @@
     if(!shell||!stage) return;
 
     const mount=document.getElementById("desktop-preview-mount");
-    const availableWidth=Math.max(260,Math.min(360,(mount?.clientWidth||380)-36));
-    const viewportHeight=Math.max(520,window.innerHeight-150);
+    const availableWidth=Math.max(280,Math.min(390,(mount?.clientWidth||390)-30));
+    const viewportHeight=Math.max(560,window.innerHeight-125);
     const maxByHeight=viewportHeight*(9/16);
     const width=Math.min(availableWidth,maxByHeight);
 
