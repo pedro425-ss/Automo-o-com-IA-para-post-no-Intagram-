@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { Pool } from "pg";
 
 const app = express();
-const APP_BUILD = "villela-safe-gallery-20261016-1148";
+const APP_BUILD = "villela-main-gallery-20261016-1155";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -511,6 +511,105 @@ function addImageCandidate(list, candidate, pageUrl, score = 0, source = "", lis
   }
 }
 
+function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
+  const containers = [];
+  const selectors = [
+    '[class*="gallery"]',
+    '[class*="galeria"]',
+    '[class*="carousel"]',
+    '[class*="swiper"]',
+    '[class*="photo"]',
+    '[class*="foto"]',
+    '[id*="gallery"]',
+    '[id*="galeria"]',
+    '[id*="carousel"]',
+    '[data-testid*="gallery"]',
+    '[data-testid*="photo"]'
+  ];
+
+  const seen = new Set();
+
+  function collectFromContainer(node, selectorIndex = 0) {
+    const container = $(node);
+    const key = node;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const images = [];
+
+    container.find("img").each((index, el) => {
+      const img = $(el);
+
+      const linkedListing = img.closest('a[href*="/imovel/"]').attr("href") || "";
+      const linkedCode = extractPropertyCode(linkedListing);
+      if (listingCode && linkedCode && linkedCode !== listingCode) return;
+
+      const ancestry = [
+        img.closest('[class*="similar"]').attr("class"),
+        img.closest('[class*="related"]').attr("class"),
+        img.closest('[class*="recommend"]').attr("class"),
+        img.closest('[class*="card"]').attr("class")
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      if (/(similar|related|recommend)/i.test(ancestry)) return;
+
+      const base = 160 - Math.min(index, 24);
+      ["src","data-src","data-lazy-src","data-original","data-image","data-url"].forEach((attr) => {
+        const value = img.attr(attr);
+        if (value) addImageCandidate(images, value, pageUrl, base, "villela-gallery:" + attr, listingCode);
+      });
+      ["srcset","data-srcset"].forEach((attr) => {
+        const value = img.attr(attr);
+        if (value) addImageCandidate(images, value, pageUrl, base + 8, "villela-gallery:" + attr, listingCode);
+      });
+    });
+
+    container.find('[style*="background"]').each((index, el) => {
+      const nodeEl = $(el);
+      const linkedListing = nodeEl.closest('a[href*="/imovel/"]').attr("href") || "";
+      const linkedCode = extractPropertyCode(linkedListing);
+      if (listingCode && linkedCode && linkedCode !== listingCode) return;
+
+      const style = nodeEl.attr("style") || "";
+      for (const match of style.matchAll(/url\((['"]?)(.*?)\1\)/gi)) {
+        addImageCandidate(images, match[2], pageUrl, 135 - Math.min(index, 18), "villela-gallery:bg", listingCode);
+      }
+    });
+
+    const unique = [];
+    const usedKeys = new Set();
+    for (const item of images.sort((a,b)=>b.score-a.score)) {
+      const keyUrl = canonicalImageKey(item.url);
+      if (usedKeys.has(keyUrl)) continue;
+      usedKeys.add(keyUrl);
+      unique.push(item);
+    }
+
+    if (unique.length >= 2) {
+      const classText = ((container.attr("class") || "") + " " + (container.attr("id") || "")).toLowerCase();
+      let score = unique.length * 100 - selectorIndex * 3;
+      if (/(gallery|galeria|photo|foto|carousel|swiper)/i.test(classText)) score += 180;
+      if (/(similar|related|recommend|card)/i.test(classText)) score -= 500;
+
+      containers.push({ score, images: unique, classText });
+    }
+  }
+
+  selectors.forEach((selector, selectorIndex) => {
+    $(selector).each((_, el) => collectFromContainer(el, selectorIndex));
+  });
+
+  containers.sort((a,b)=>b.score-a.score);
+  const best = containers[0];
+
+  if (best?.images?.length >= 2) {
+    console.log("✅ Galeria principal Villela identificada:", best.images.length, "fotos");
+    return best.images;
+  }
+
+  return [];
+}
+
 function collectImageCandidates($, pageUrl, jsonLd = [], listingCode = "") {
   const candidates = [];
 
@@ -731,7 +830,12 @@ function extractListingData($, pageUrl) {
   const city = cleanText(address.addressLocality || address.addressRegion || "");
   const district = cleanText(address.addressDistrict || address.neighborhood || address.subLocality || "");
   const listingCode = extractPropertyCode(pageUrl);
-  const imageCandidates = collectImageCandidates($, pageUrl, jsonLd, listingCode);
+  const villelaGallery = isVillelaUrl(pageUrl)
+    ? collectVillelaGalleryCandidates($, pageUrl, listingCode)
+    : [];
+  const imageCandidates = villelaGallery.length >= 2
+    ? villelaGallery
+    : collectImageCandidates($, pageUrl, jsonLd, listingCode);
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
   const featureMap = [
@@ -848,6 +952,7 @@ app.post("/analisar-imovel", async (req, res) => {
       imagemUrl: downloaded.url || dados.imagemUrl || "",
       imagens: downloadedImages.map((item) => item.base64),
       imagensUrls: downloadedImages.map((item) => item.url),
+      quantidadeFotosSeguras: downloadedImages.length,
       urlResolvida: finalPageUrl,
     };
 
