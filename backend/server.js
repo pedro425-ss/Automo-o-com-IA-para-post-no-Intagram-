@@ -498,7 +498,7 @@ function addImageCandidate(list, candidate, pageUrl, score = 0, source = "", lis
 
     let finalScore = score;
     const lower = url.toLowerCase();
-    if (/(logo|icon|favicon|avatar|sprite|placeholder|loading|blank)/i.test(lower)) finalScore -= 80;
+    if (/(logo|icon|favicon|avatar|sprite|placeholder|loading|blank|banner|brand|marca)/i.test(lower)) finalScore -= 140;
     if (/(imovel|property|foto|photo|image|img|galeria|gallery)/i.test(lower)) finalScore += 18;
 
     const existing = list.find((item) => item.url === url);
@@ -748,6 +748,9 @@ async function downloadValidImages(candidates, pageUrl, limit = 6) {
   const usedKeys = new Set();
 
   for (const candidate of candidates.slice(0, 60)) {
+    const candidateText = (candidate.url + " " + (candidate.source || "")).toLowerCase();
+    if (/(logo|icon|favicon|sprite|placeholder|banner|brand|marca)/i.test(candidateText)) continue;
+
     const key = canonicalImageKey(candidate.url);
     if (usedKeys.has(key)) continue;
     if (images.length >= limit) break;
