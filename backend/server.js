@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import { Pool } from "pg";
 
 const app = express();
+const APP_BUILD = "villela-resolver-20261016-1045";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,6 +93,7 @@ function sendFrontendFile(res, fileName) {
 }
 
 app.get("/", (req, res) => sendFrontendFile(res, "index.html"));
+app.get("/api/version", (req, res) => res.json({ build: APP_BUILD }));
 app.get("/Style.css", (req, res) => sendFrontendFile(res, "Style.css"));
 app.get("/adjustments.css", (req, res) => sendFrontendFile(res, "adjustments.css"));
 app.get("/mobile.css", (req, res) => sendFrontendFile(res, "mobile.css"));
