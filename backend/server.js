@@ -278,6 +278,64 @@ async function fetchText(url, timeout = 12000) {
   };
 }
 
+
+async function resolveVillelaViaPublicSearch(code) {
+  const queries = [
+    "site:villelaimoveis.com.br/imovel " + code,
+    '"' + code + '" villelaimoveis',
+  ];
+
+  for (const query of queries) {
+    const endpoints = [
+      "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query),
+      "https://www.google.com/search?q=" + encodeURIComponent(query),
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await axios.get(endpoint, {
+          timeout: 12000,
+          maxRedirects: 5,
+          responseType: "text",
+          validateStatus: (status) => status >= 200 && status < 400,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+          },
+        });
+
+        const html = String(response.data || "");
+        const urls = new Set();
+
+        // Links diretos presentes no HTML da busca.
+        for (const match of html.matchAll(/https?:\/\/(?:www\.)?villelaimoveis\.com\.br\/imovel\/[^"'&<>\s]+/gi)) {
+          urls.add(match[0].replace(/&amp;/g, "&"));
+        }
+
+        // DuckDuckGo costuma encapsular a URL no parâmetro uddg.
+        for (const match of html.matchAll(/[?&]uddg=([^&"']+)/gi)) {
+          try {
+            const decoded = decodeURIComponent(match[1]);
+            if (/^https?:\/\/(?:www\.)?villelaimoveis\.com\.br\/imovel\//i.test(decoded)) {
+              urls.add(decoded);
+            }
+          } catch {}
+        }
+
+        const found = [...urls].find((url) => url.toUpperCase().includes(code.toUpperCase()));
+        if (found) {
+          console.log("✅ URL Villela resolvida por busca pública:", found);
+          return found;
+        }
+      } catch (error) {
+        console.warn("⚠️ Busca pública não resolveu", code, error.message);
+      }
+    }
+  }
+  return "";
+}
+
 async function resolveVillelaListingUrl(inputUrl) {
   if (!isVillelaUrl(inputUrl)) return inputUrl;
 
@@ -343,6 +401,12 @@ async function resolveVillelaListingUrl(inputUrl) {
     } catch (error) {
       console.warn("⚠️ Sitemap indisponível:", sitemapUrl, error.message);
     }
+  }
+
+  const publicSearchUrl = await resolveVillelaViaPublicSearch(code);
+  if (publicSearchUrl) {
+    listingUrlCache.set(code, { url: publicSearchUrl, savedAt: Date.now() });
+    return publicSearchUrl;
   }
 
   return inputUrl;
