@@ -595,6 +595,48 @@ async function downloadFirstValidImage(candidates, pageUrl) {
   return { base64: "", url: "", source: "", errors };
 }
 
+async function downloadValidImages(candidates, pageUrl, limit = 4) {
+  const images = [];
+  const buffers = [];
+
+  for (const candidate of candidates.slice(0, 36)) {
+    if (images.length >= limit) break;
+    try {
+      const response = await axios.get(candidate.url, {
+        responseType: "arraybuffer",
+        timeout: 12000,
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+          "Referer": pageUrl,
+        },
+      });
+
+      const contentType = String(response.headers["content-type"] || "").toLowerCase();
+      const buffer = Buffer.from(response.data || []);
+      if (!buffer.length) continue;
+      if (!contentType.startsWith("image/")) continue;
+      if (buffer.length < 7000 && !contentType.includes("svg")) continue;
+      if (buffer.length > 2500000) continue;
+
+      const duplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
+      if (duplicate) continue;
+
+      buffers.push(buffer);
+      images.push({
+        base64: "data:" + contentType.split(";")[0] + ";base64," + buffer.toString("base64"),
+        url: candidate.url,
+        source: candidate.source,
+      });
+    } catch {}
+  }
+
+  return images;
+}
+
 function formatPrice(value, currency = "BRL") {
   const raw = cleanText(value);
   if (!raw) return "";
@@ -740,7 +782,8 @@ app.post("/analisar-imovel", async (req, res) => {
       }
     }
 
-    const downloaded = await downloadFirstValidImage(dados.imagensCandidatas || [], finalPageUrl);
+    const downloadedImages = await downloadValidImages(dados.imagensCandidatas || [], finalPageUrl, 4);
+    const downloaded = downloadedImages[0] || await downloadFirstValidImage(dados.imagensCandidatas || [], finalPageUrl);
     const publicData = {
       titulo: dados.titulo,
       preco: dados.preco,
@@ -750,6 +793,8 @@ app.post("/analisar-imovel", async (req, res) => {
       descricao: dados.descricao,
       diferenciais: dados.diferenciais,
       imagemUrl: downloaded.url || dados.imagemUrl || "",
+      imagens: downloadedImages.map((item) => item.base64),
+      imagensUrls: downloadedImages.map((item) => item.url),
       urlResolvida: finalPageUrl,
     };
 
@@ -790,6 +835,8 @@ app.post("/analisar-imovel", async (req, res) => {
       imagem: downloaded.base64,
       imagemUrl: downloaded.url,
       fonteImagem: downloaded.source,
+      imagens: downloadedImages.map((item) => item.base64),
+      imagensUrls: downloadedImages.map((item) => item.url),
       dados: publicData,
     });
   } catch (error) {
