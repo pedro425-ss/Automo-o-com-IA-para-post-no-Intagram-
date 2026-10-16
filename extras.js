@@ -113,8 +113,8 @@
         </div>
 
         <div class="story-extra-control">
-          <div class="story-extra-head"><label class="story-extra-title" for="logo-size">Tamanho do logo</label><span id="logo-size-value" class="story-extra-value">200 px</span></div>
-          <input id="logo-size" class="story-extra-range" type="range" min="100" max="320" step="5" value="200" />
+          <div class="story-extra-head"><label class="story-extra-title" for="logo-size">Tamanho do logo</label><span id="logo-size-value" class="story-extra-value">150 px</span></div>
+          <input id="logo-size" class="story-extra-range" type="range" min="100" max="320" step="5" value="150" />
           <div class="hint">Encaixe automático ativo: o formato do logo é respeitado; use este controle só para o ajuste fino.</div>
         </div>
       </div>
@@ -253,12 +253,12 @@
     let radius = 28;
 
     if (safeAspect >= 1.35) {
-      width = clamp(baseSize * Math.min(safeAspect, 2.35), baseSize, 500);
-      height = clamp(baseSize * 0.82, 110, 300);
+      width = clamp(baseSize * Math.min(safeAspect, 2.1), baseSize, 380);
+      height = clamp(baseSize * 0.78, 90, 220);
       radius = 28;
     } else if (safeAspect <= 0.75) {
-      width = clamp(baseSize * 0.82, 110, 280);
-      height = clamp(baseSize / Math.max(safeAspect, 0.55), baseSize, 390);
+      width = clamp(baseSize * 0.80, 90, 220);
+      height = clamp(baseSize / Math.max(safeAspect, 0.62), baseSize, 300);
       radius = 28;
     } else {
       width = baseSize;
@@ -281,7 +281,7 @@
     const positionInput = byId("logo-position");
     if (!wrapper) return;
 
-    const size = clamp(Number(sizeInput?.value || 200), 100, 320);
+    const size = clamp(Number(sizeInput?.value || 150), 90, 260);
     const position = positionInput?.value || "top-left";
     const metrics = getSmartLogoBox(img, size);
 
@@ -458,7 +458,7 @@
         morePhotosUrl: byId("more-photos-url")?.value || "",
         showQr: Boolean(byId("show-qr")?.checked),
         contentY: Number(byId("content-y")?.value || 0),
-        logoSize: Number(byId("logo-size")?.value || 200),
+        logoSize: Number(byId("logo-size")?.value || 150),
         logoPosition: byId("logo-position")?.value || "top-left"
       });
       const btn = byId("save-branding-now");
