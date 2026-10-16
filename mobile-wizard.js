@@ -54,6 +54,12 @@
         body.mobile-wizard-active .property-panel{
           display:none!important;
         }
+        body.mobile-wizard-active .story-template-panel{
+          display:none!important;
+        }
+        body.mobile-wizard-active.mobile-wizard-step-2 .story-template-panel{
+          display:block!important;
+        }
         body.mobile-wizard-active.mobile-secondary-open .workflow-panel,
         body.mobile-wizard-active.mobile-secondary-open .property-panel{
           display:block!important;
@@ -411,6 +417,10 @@
 
   function setStep(step) {
     currentStep = Math.max(1, Math.min(6, step));
+    for (let i = 1; i <= 6; i += 1) {
+      document.body.classList.remove(`mobile-wizard-step-${i}`);
+    }
+    document.body.classList.add(`mobile-wizard-step-${currentStep}`);
     classifySections();
     document.querySelectorAll(".panel>.section[data-mobile-step]").forEach((section) => {
       section.classList.toggle("mobile-step-active", Number(section.dataset.mobileStep) === currentStep);
