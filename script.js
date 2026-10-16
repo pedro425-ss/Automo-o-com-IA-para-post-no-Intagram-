@@ -234,35 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsDataURL(file);
   });
 
-  $("buscar-imagem-ia")?.addEventListener("click", async (e) => {
-    e.preventDefault();
-
-    const url = $("imovel-url")?.value?.trim();
-    if (!url) return alert("Cole a URL do imóvel");
-
-    try {
-      const res = await fetch(`${API_BASE}/analisar-imovel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        console.error("Backend erro:", data);
-        return alert(data?.erro || "Erro no backend");
-      }
-      if (!data.imagem) return alert("Não veio imagem do backend.");
-
-      storyImage.crossOrigin = "anonymous";
-      storyImage.src = data.imagem;
-      storyImage.classList.remove("hidden");
-      invalidateStoryCache();
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao buscar imagem no backend online.");
-    }
-  });
+  // A busca por URL é tratada exclusivamente por autofill.js.
+  // Mantemos apenas um fluxo para evitar requisições duplicadas e alertas conflitantes.
 
   function setupDirectManipulation() {
     if (!story || !storyImage || !posX || !posY || !zoom) return;
