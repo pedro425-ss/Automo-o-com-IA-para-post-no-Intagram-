@@ -605,6 +605,81 @@ app.patch("/api/admin/organizations/:id", requireAuth, requireSuperAdmin, async 
   }
 });
 
+app.get("/api/admin/organizations/:id/users", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const orgId = String(req.params.id || "");
+    const orgResult = await pool.query("SELECT * FROM access_organizations WHERE id = $1 LIMIT 1", [orgId]);
+    if (!orgResult.rowCount) return res.status(404).json({ erro: "Imobiliária não encontrada." });
+    const usersResult = await pool.query("SELECT * FROM access_users WHERE organization_id = $1 ORDER BY CASE WHEN role = 'owner' THEN 0 ELSE 1 END, created_at ASC", [orgId]);
+    return res.json({ organization: publicOrganization(orgResult.rows[0]), users: usersResult.rows.map(publicUser) });
+  } catch (error) {
+    console.error("❌ Listar acessos da imobiliária:", error.message);
+    return res.status(500).json({ erro: "Erro ao listar acessos da imobiliária." });
+  }
+});
+
+app.post("/api/admin/organizations/:id/users", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const orgId = String(req.params.id || "");
+    const name = String(req.body?.name || "").trim().slice(0, 100);
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
+    if (!name || !email.includes("@")) return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
+    if (password.length < 8) return res.status(400).json({ erro: "A senha precisa ter pelo menos 8 caracteres." });
+    const orgResult = await pool.query("SELECT * FROM access_organizations WHERE id = $1 LIMIT 1", [orgId]);
+    const org = orgResult.rows[0];
+    if (!org) return res.status(404).json({ erro: "Imobiliária não encontrada." });
+    const countResult = await pool.query("SELECT COUNT(*)::int AS total FROM access_users WHERE organization_id = $1 AND active = TRUE", [orgId]);
+    const activeUsers = Number(countResult.rows[0]?.total || 0);
+    if (activeUsers >= Number(org.user_limit || 1)) return res.status(409).json({ erro: "Limite de acessos do plano atingido." });
+    const id = makeId("usr");
+    const result = await pool.query(
+      "INSERT INTO access_users (id, organization_id, name, email, password_hash, role, active) VALUES ($1,$2,$3,$4,$5,'member',TRUE) RETURNING *",
+      [id, orgId, name, email, hashPassword(password)]
+    );
+    return res.status(201).json({ user: publicUser(result.rows[0]) });
+  } catch (error) {
+    if (String(error.code) === "23505") return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+    console.error("❌ Criar acesso da imobiliária:", error.message);
+    return res.status(500).json({ erro: "Erro ao criar acesso." });
+  }
+});
+
+app.patch("/api/admin/organizations/:orgId/users/:userId", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const orgId = String(req.params.orgId || "");
+    const userId = String(req.params.userId || "");
+    const existingResult = await pool.query("SELECT * FROM access_users WHERE id = $1 AND organization_id = $2 LIMIT 1", [userId, orgId]);
+    const existing = existingResult.rows[0];
+    if (!existing) return res.status(404).json({ erro: "Usuário não encontrado." });
+    const updates = []; const values = []; let index = 1;
+    if (typeof req.body?.active === "boolean") {
+      if (existing.role === "owner" && req.body.active === false) return res.status(400).json({ erro: "Para bloquear o responsável, bloqueie a imobiliária inteira." });
+      if (req.body.active === true && existing.active !== true) {
+        const orgResult = await pool.query("SELECT user_limit FROM access_organizations WHERE id = $1 LIMIT 1", [orgId]);
+        const limit = Number(orgResult.rows[0]?.user_limit || 1);
+        const countResult = await pool.query("SELECT COUNT(*)::int AS total FROM access_users WHERE organization_id = $1 AND active = TRUE", [orgId]);
+        if (Number(countResult.rows[0]?.total || 0) >= limit) return res.status(409).json({ erro: "Limite de acessos do plano atingido." });
+      }
+      updates.push("active = $" + index++); values.push(req.body.active);
+    }
+    const name = String(req.body?.name || "").trim();
+    if (name) { updates.push("name = $" + index++); values.push(name.slice(0, 100)); }
+    const password = String(req.body?.password || "");
+    if (password) {
+      if (password.length < 8) return res.status(400).json({ erro: "A nova senha precisa ter pelo menos 8 caracteres." });
+      updates.push("password_hash = $" + index++); values.push(hashPassword(password));
+    }
+    if (!updates.length) return res.status(400).json({ erro: "Nenhuma alteração enviada." });
+    values.push(userId, orgId);
+    const result = await pool.query("UPDATE access_users SET " + updates.join(", ") + " WHERE id = $" + index++ + " AND organization_id = $" + index + " RETURNING *", values);
+    return res.json({ user: publicUser(result.rows[0]) });
+  } catch (error) {
+    console.error("❌ Atualizar acesso da imobiliária:", error.message);
+    return res.status(500).json({ erro: "Erro ao atualizar acesso." });
+  }
+});
+
 app.get("/api/cloud-status", async (req, res) => {
   if (!pool) return res.json({ connected: false, reason: "DATABASE_URL ausente" });
   try {
