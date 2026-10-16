@@ -448,6 +448,8 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  window.setMobileWizardStep = (step) => setStep(step);
+
   function syncMode() {
     const mobile = window.matchMedia(MOBILE_QUERY).matches;
     document.body.classList.toggle("mobile-wizard-active", mobile);
