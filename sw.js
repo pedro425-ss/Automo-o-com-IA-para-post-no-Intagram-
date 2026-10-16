@@ -1,4 +1,4 @@
-const CACHE_NAME = "story-imoveis-pwa-v1";
+const CACHE_NAME = "story-imoveis-pwa-v2";
 const APP_SHELL = [
   "/",
   "/Style.css",
@@ -7,8 +7,8 @@ const APP_SHELL = [
   "/brand-theme.js?v=4",
   "/mobile-wizard.js?v=5",
   "/manifest.webmanifest",
-  "/pwa-icon-192.svg",
-  "/pwa-icon-512.svg"
+  "/pwa-icon-192.png",
+  "/pwa-icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
