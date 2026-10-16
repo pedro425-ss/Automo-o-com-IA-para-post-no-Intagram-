@@ -344,7 +344,18 @@ function extractListingData($, pageUrl) {
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
   const featureMap = [
-    ["Casa sede", ["casa sede"]], ["Lago", ["lago"]], ["Nascente", ["nascente"]], ["Área verde", ["área verde", "area verde"]], ["Fácil acesso", ["fácil acesso", "facil acesso"]], ["Documentação OK", ["documentação ok", "documentacao ok", "documentação em ordem", "documentacao em ordem"]],
+    ["Suíte", ["suíte", "suite"]],
+    ["Vagas", ["vaga", "vagas", "garagem"]],
+    ["Quintal", ["quintal"]],
+    ["Área gourmet", ["área gourmet", "area gourmet", "espaço gourmet", "espaco gourmet"]],
+    ["Fácil acesso", ["fácil acesso", "facil acesso", "boa localização", "boa localizacao"]],
+    ["Documentação OK", ["documentação ok", "documentacao ok", "documentação em ordem", "documentacao em ordem"]],
+    ["Pé-direito alto", ["pé-direito", "pe-direito", "pé direito", "pe direito"]],
+    ["Pátio", ["pátio", "patio"]],
+    ["Docas", ["doca", "docas"]],
+    ["Energia trifásica", ["trifásica", "trifasica", "energia trifásica", "energia trifasica"]],
+    ["Zoneamento industrial", ["zoneamento industrial", "zona industrial"]],
+    ["Acesso à rodovia", ["acesso à rodovia", "acesso a rodovia", "acesso rodoviário", "acesso rodoviario", "rodovia"]],
   ];
   const diferenciais = featureMap.filter(([, keywords]) => keywords.some((keyword) => searchable.includes(keyword))).map(([label]) => label);
 
