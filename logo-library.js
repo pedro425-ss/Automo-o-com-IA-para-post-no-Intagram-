@@ -152,6 +152,14 @@
     img.src = record.dataUrl;
     img.classList.remove("hidden");
     wrapper.classList.remove("hidden");
+
+    const brandName = $("brand-name");
+    if (brandName && record.name) {
+      brandName.value = record.name;
+      brandName.dispatchEvent(new Event("input", { bubbles: true }));
+      brandName.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
     try { localStorage.setItem(LEGACY_KEY, record.dataUrl); } catch {}
     invalidate();
   }
@@ -213,13 +221,19 @@
 
     const nameInput = $("logo-library-name");
     const typedName = nameInput?.value?.trim() || "";
-    const name = typedName || `Imobiliária ${logos.length + 1}`;
+    const brandName = $("brand-name")?.value?.trim() || "";
+    const name = typedName || brandName || `Imobiliária ${logos.length + 1}`;
     const now = new Date().toISOString();
     const id = `logo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const record = { id, name, dataUrl: img.src, createdAt: now, updatedAt: now };
 
     await putLogo(record);
     if (!getDefaultId()) setDefaultId(id);
+    const brandField = $("brand-name");
+    if (brandField) {
+      brandField.value = name;
+      brandField.dispatchEvent(new Event("input", { bubbles: true }));
+    }
     if (nameInput) nameInput.value = "";
     await renderLibrary();
 
@@ -242,7 +256,7 @@
 
     const id = `logo-migrado-${Date.now()}`;
     const now = new Date().toISOString();
-    await putLogo({ id, name: "Logo salvo", dataUrl: oldLogo, createdAt: now, updatedAt: now });
+    await putLogo({ id, name: "Minha Imobiliária", dataUrl: oldLogo, createdAt: now, updatedAt: now });
     if (!getDefaultId()) setDefaultId(id);
   }
 
