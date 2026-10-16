@@ -231,10 +231,10 @@
       secondary,
       accent,
       highlight,
-      bg: mix(primaryRaw, dark, 0.88),
-      panel: mix(primaryRaw, dark2, 0.80),
-      section: mix(secondaryRaw, dark, 0.90),
-      control: mix(primaryRaw, { r: 30, g: 35, b: 45 }, 0.78),
+      bg: mix(primaryRaw, dark, 0.70),
+      panel: mix(primaryRaw, dark2, 0.58),
+      section: mix(secondaryRaw, dark, 0.72),
+      control: mix(primaryRaw, { r: 30, g: 35, b: 45 }, 0.62),
       textOnPrimary: luminance(primary) > 0.46 ? "#101318" : "#ffffff",
       mode
     };
@@ -247,25 +247,44 @@
     style.textContent = `
       html[data-brand-theme="auto"] body{
         background:
-          radial-gradient(circle at 8% 0%,var(--brand-glow),transparent 34%),
-          radial-gradient(circle at 92% 18%,var(--brand-glow-2),transparent 30%),
+          linear-gradient(135deg,var(--brand-page-wash),transparent 48%),
+          radial-gradient(circle at 8% 0%,var(--brand-glow),transparent 38%),
+          radial-gradient(circle at 92% 18%,var(--brand-glow-2),transparent 34%),
           var(--brand-bg) !important;
         transition:background .45s ease;
       }
       html[data-brand-theme="auto"] .panel{
         background:linear-gradient(165deg,var(--brand-panel),var(--brand-panel-2)) !important;
-        border-color:var(--brand-border) !important;
-        box-shadow:0 24px 70px var(--brand-shadow) !important;
+        border:2px solid var(--brand-border-strong) !important;
+        box-shadow:0 24px 70px var(--brand-shadow),0 0 0 1px var(--brand-focus) inset !important;
+        position:relative !important;
+        overflow:hidden !important;
+      }
+      html[data-brand-theme="auto"] .panel::before{
+        content:"";
+        position:absolute;
+        inset:0 0 auto 0;
+        height:7px;
+        background:linear-gradient(90deg,var(--brand-primary),var(--brand-secondary),var(--brand-highlight));
+        z-index:20;
       }
       html[data-brand-theme="auto"] .section,
       html[data-brand-theme="auto"] .story-template-panel,
       html[data-brand-theme="auto"] .logo-library,
       html[data-brand-theme="auto"] .cloud-profile-box,
       html[data-brand-theme="auto"] .story-extra-control{
-        background:var(--brand-section) !important;
-        border-color:var(--brand-border) !important;
+        background:linear-gradient(145deg,var(--brand-section),var(--brand-section-2)) !important;
+        border-color:var(--brand-border-strong) !important;
+        box-shadow:0 8px 24px rgba(0,0,0,.12) !important;
       }
-      html[data-brand-theme="auto"] .panel-title,
+      html[data-brand-theme="auto"] .panel-title{
+        color:var(--brand-highlight) !important;
+        text-shadow:0 0 24px var(--brand-glow);
+      }
+      html[data-brand-theme="auto"] .panel-subtitle{
+        color:var(--brand-soft-text) !important;
+        opacity:1 !important;
+      }
       html[data-brand-theme="auto"] .section-title,
       html[data-brand-theme="auto"] .story-template-title,
       html[data-brand-theme="auto"] .story-extra-title,
@@ -321,7 +340,10 @@
         border:2px solid var(--brand-border-strong) !important;
       }
       html[data-brand-theme="auto"] .instagram-story{
-        background:linear-gradient(160deg,var(--brand-story-dark),var(--brand-primary),var(--brand-secondary)) !important;
+        background:
+          radial-gradient(circle at 20% 10%,var(--brand-story-light),transparent 36%),
+          linear-gradient(160deg,var(--brand-story-dark) 0%,var(--brand-primary) 52%,var(--brand-secondary) 100%) !important;
+        box-shadow:0 0 0 4px var(--brand-border-strong) inset,0 24px 80px var(--brand-story-glow) !important;
       }
       html[data-brand-style="vibrant"] .panel{border-radius:30px !important}
       html[data-brand-style="vibrant"] .section{border-radius:20px !important}
@@ -351,7 +373,8 @@
 
   function buildUi() {
     if ($("auto-brand-box")) return;
-    const host = $("logo-library") || $("story-advanced-section");
+    const logoInput = $("logo-upload-story");
+    const host = logoInput?.closest(".section") || $("logo-library") || $("story-advanced-section");
     if (!host) return;
 
     const box = document.createElement("div");
@@ -388,10 +411,14 @@
   function updateUi(theme, message = "") {
     const status = $("auto-brand-status");
     const mode = $("auto-brand-mode");
-    if (status) status.textContent = message || "Identidade aplicada";
+    if (status) {
+      status.textContent = theme
+        ? `${message || "Identidade aplicada"} • ${rgbToHex(theme.primary)} + ${rgbToHex(theme.secondary)}`
+        : (message || "Aguardando logo");
+    }
     if (mode && theme) {
       const names = { vibrant: "Vibrante", elegant: "Elegante", soft: "Suave" };
-      mode.textContent = `Estilo detectado: ${names[theme.mode] || theme.mode}. A troca de logo atualiza o tema automaticamente.`;
+      mode.textContent = `Estilo detectado: ${names[theme.mode] || theme.mode}. Paleta ativa: ${rgbToHex(theme.primary)}, ${rgbToHex(theme.secondary)} e ${rgbToHex(theme.highlight)}.`;
     }
     const swatches = [
       ["auto-brand-primary", theme?.primary],
@@ -417,19 +444,23 @@
       "--brand-bg": rgbToHex(theme.bg),
       "--brand-panel": rgbToHex(theme.panel),
       "--brand-panel-2": rgbToHex(mix(theme.secondary, theme.bg, 0.84)),
-      "--brand-section": rgba(theme.section, 0.82),
-      "--brand-control": rgba(theme.control, 0.82),
+      "--brand-section": rgba(theme.section, 0.90),
+      "--brand-section-2": rgba(mix(theme.primary, theme.bg, 0.58), 0.92),
+      "--brand-control": rgba(theme.control, 0.92),
       "--brand-on-primary": theme.textOnPrimary,
-      "--brand-border": rgba(theme.accent, 0.28),
-      "--brand-border-soft": rgba(theme.accent, 0.18),
-      "--brand-border-strong": rgba(theme.accent, 0.48),
-      "--brand-focus": rgba(theme.accent, 0.22),
-      "--brand-glow": rgba(theme.primary, 0.18),
-      "--brand-glow-2": rgba(theme.secondary, 0.13),
+      "--brand-soft-text": rgbToHex(mix(theme.highlight, {r:255,g:255,b:255}, 0.32)),
+      "--brand-border": rgba(theme.accent, 0.38),
+      "--brand-border-soft": rgba(theme.accent, 0.30),
+      "--brand-border-strong": rgba(theme.accent, 0.70),
+      "--brand-focus": rgba(theme.accent, 0.28),
+      "--brand-glow": rgba(theme.primary, 0.34),
+      "--brand-glow-2": rgba(theme.secondary, 0.26),
+      "--brand-page-wash": rgba(theme.primary, 0.22),
       "--brand-shadow": "rgba(0,0,0,.28)",
       "--brand-button-shadow": rgba(theme.primary, 0.22),
-      "--brand-story-glow": rgba(theme.accent, 0.26),
-      "--brand-story-dark": rgbToHex(mix(theme.primary, { r: 4, g: 7, b: 10 }, 0.82))
+      "--brand-story-glow": rgba(theme.accent, 0.42),
+      "--brand-story-light": rgba(theme.highlight, 0.24),
+      "--brand-story-dark": rgbToHex(mix(theme.primary, { r: 4, g: 7, b: 10 }, 0.68))
     };
 
     Object.entries(vars).forEach(([key, value]) => root.style.setProperty(key, value));
