@@ -445,6 +445,7 @@
     if (secondaryToggle) secondaryToggle.style.display = currentStep === 1 ? "" : "none";
     if (currentStep !== 1) document.body.classList.remove("mobile-secondary-open");
 
+    window.dispatchEvent(new CustomEvent("mobile-wizard-step-change", { detail: currentStep }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
