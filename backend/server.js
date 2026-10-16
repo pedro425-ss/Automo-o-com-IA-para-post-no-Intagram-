@@ -10,7 +10,7 @@ import sharp from "sharp";
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "crypto";
 
 const app = express();
-const APP_BUILD = "story-access-control-20261016-1535";
+const APP_BUILD = "universal-property-extractor-20261016-1555";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1234,6 +1234,235 @@ function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
   return [];
 }
 
+
+function siteDomain(pageUrl) {
+  try {
+    return new URL(pageUrl).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function universalListingIdentity(pageUrl) {
+  try {
+    const url = new URL(pageUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const last = segments[segments.length - 1] || "";
+    const idMatch = (url.pathname + url.search).match(/(?:imovel|property|listing|codigo|code|id)[\/_=-]*([a-z0-9_-]{3,})/i);
+    return cleanText(idMatch?.[1] || last).toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function collectUniversalGalleryCandidates($, pageUrl) {
+  const candidates = [];
+  const containers = [];
+  const identity = universalListingIdentity(pageUrl);
+
+  const selectors = [
+    '[class*="gallery"]','[class*="galeria"]','[class*="carousel"]','[class*="swiper"]',
+    '[class*="slider"]','[class*="photo"]','[class*="foto"]','[class*="image"]',
+    '[id*="gallery"]','[id*="galeria"]','[id*="carousel"]','[id*="slider"]',
+    '[data-testid*="gallery"]','[data-testid*="photo"]','[data-testid*="image"]',
+    'main','article'
+  ];
+
+  const seen = new Set();
+
+  function badContext(node) {
+    const text = [
+      node.attr("class") || "",
+      node.attr("id") || "",
+      node.closest("header,footer,nav").attr("class") || "",
+      node.closest('[class*="similar"],[class*="related"],[class*="recommend"]').attr("class") || ""
+    ].join(" ").toLowerCase();
+    return /(logo|brand|marca|avatar|icon|menu|navbar|footer|header|similar|related|recommend|banner|ads?|advert)/i.test(text);
+  }
+
+  function addFromNode(container, selectorIndex) {
+    const domNode = container.get(0);
+    if (!domNode || seen.has(domNode) || badContext(container)) return;
+    seen.add(domNode);
+
+    const local = [];
+    const add = (value, score, source) => {
+      if (!value) return;
+      addImageCandidate(local, value, pageUrl, score, source, "");
+    };
+
+    container.find("img").each((index, el) => {
+      const img = $(el);
+      if (badContext(img)) return;
+
+      const text = [
+        img.attr("alt") || "", img.attr("class") || "", img.attr("id") || "",
+        img.attr("src") || "", img.attr("data-src") || ""
+      ].join(" ").toLowerCase();
+      if (/(logo|avatar|icon|sprite|placeholder|banner|brand|marca)/i.test(text)) return;
+
+      const score = 195 - Math.min(index, 35);
+      ["src","data-src","data-lazy-src","data-original","data-image","data-url","data-full","data-large"].forEach((attr) => add(img.attr(attr), score, "universal-gallery:img:" + attr));
+      ["srcset","data-srcset"].forEach((attr) => add(img.attr(attr), score + 8, "universal-gallery:img:" + attr));
+    });
+
+    container.find("source").each((index, el) => {
+      const source = $(el);
+      ["src","srcset","data-src","data-srcset"].forEach((attr) => add(source.attr(attr), 202 - Math.min(index, 30), "universal-gallery:source:" + attr));
+    });
+
+    container.find("a").each((index, el) => {
+      const a = $(el);
+      if (badContext(a)) return;
+      ["href","data-src","data-image","data-photo","data-foto","data-full","data-original","data-large"].forEach((attr) => {
+        const value = a.attr(attr);
+        if (!value) return;
+        if (/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(value) || /(?:foto|photo|image|img|gallery|galeria)/i.test(attr + " " + value)) {
+          add(value, 190 - Math.min(index, 30), "universal-gallery:a:" + attr);
+        }
+      });
+    });
+
+    container.find("*").each((index, el) => {
+      const attrs = el.attribs || {};
+      for (const [name, rawValue] of Object.entries(attrs)) {
+        if (!rawValue || typeof rawValue !== "string") continue;
+        if (!/^(?:data-|src|srcset|href|poster)/i.test(name)) continue;
+        const value = rawValue.replace(/\\u002F/gi, "/").replace(/\\\//g, "/");
+        if (/\.(?:jpe?g|png|webp|avif)(?:[?#\s]|$)/i.test(value) || /(?:foto|photo|image|img|gallery|galeria|full|large)/i.test(name)) {
+          add(value, 170 - Math.min(index, 40), "universal-gallery:attr:" + name);
+        }
+      }
+    });
+
+    container.find('[style*="background"]').each((index, el) => {
+      const style = $(el).attr("style") || "";
+      for (const match of style.matchAll(/url\((['"]?)(.*?)\1\)/gi)) {
+        add(match[2], 160 - Math.min(index, 25), "universal-gallery:bg");
+      }
+    });
+
+    const unique = [];
+    const keys = new Set();
+    for (const item of local.sort((a,b) => b.score - a.score)) {
+      const key = canonicalImageKey(item.url);
+      if (keys.has(key)) continue;
+      keys.add(key);
+      unique.push(item);
+    }
+
+    if (unique.length >= 2) {
+      const classText = ((container.attr("class") || "") + " " + (container.attr("id") || "")).toLowerCase();
+      let score = unique.length * 80 - selectorIndex * 4;
+      if (/(gallery|galeria|carousel|swiper|slider|photo|foto)/i.test(classText)) score += 260;
+      if (identity && container.text().toLowerCase().includes(identity)) score += 50;
+      if (container.is("main,article")) score -= 120;
+      containers.push({ score, images: unique });
+    }
+  }
+
+  selectors.forEach((selector, selectorIndex) => {
+    $(selector).each((_, el) => addFromNode($(el), selectorIndex));
+  });
+
+  containers.sort((a,b) => b.score - a.score);
+  for (const group of containers.slice(0, 3)) {
+    group.images.forEach((item) => candidates.push(item));
+  }
+
+  const output = [];
+  const keys = new Set();
+  for (const item of candidates.sort((a,b) => b.score - a.score)) {
+    const key = canonicalImageKey(item.url);
+    if (keys.has(key)) continue;
+    keys.add(key);
+    output.push(item);
+  }
+  return output;
+}
+
+function collectUniversalEmbeddedImages($, pageUrl) {
+  const candidates = [];
+  const identity = universalListingIdentity(pageUrl);
+  const imageKey = /(?:image|images|photo|photos|foto|fotos|gallery|galeria|picture|pictures|media|slides|carousel|photoswipe|full|large)/i;
+
+  function add(value, score = 215, source = "universal-embedded") {
+    if (typeof value !== "string") return;
+    const cleaned = value
+      .replace(/\\u002F/gi, "/")
+      .replace(/\\\//g, "/")
+      .replace(/&amp;/g, "&");
+    if (/^https?:\/\//i.test(cleaned) || /\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(cleaned)) {
+      addImageCandidate(candidates, cleaned, pageUrl, score, source, "");
+    }
+  }
+
+  function walk(value, path = "", depth = 0) {
+    if (depth > 14 || value == null) return;
+    if (typeof value === "string") {
+      if (imageKey.test(path) || /\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(value)) add(value, imageKey.test(path) ? 245 : 195, "embedded-json:" + path);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.slice(0, 250).forEach((item, index) => walk(item, path + "[" + index + "]", depth + 1));
+      return;
+    }
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([key, nested]) => {
+        walk(nested, path ? path + "." + key : key, depth + 1);
+      });
+    }
+  }
+
+  $('script[type="application/ld+json"], script#__NEXT_DATA__, script[type="application/json"], script[type="application/ld+json"]').each((_, el) => {
+    const raw = $(el).html() || "";
+    if (!raw.trim()) return;
+    try { walk(JSON.parse(raw.trim())); } catch {}
+  });
+
+  $("script").each((_, el) => {
+    const raw = $(el).html() || "";
+    if (!raw || raw.length > 4000000) return;
+
+    const normalized = raw.replace(/\\u002F/gi, "/").replace(/\\\//g, "/");
+    const identityHit = identity && normalized.toLowerCase().includes(identity);
+    const sourceScore = identityHit ? 225 : 180;
+
+    for (const match of normalized.matchAll(/https?:\/\/[^"'<>\\\s]+?(?:jpe?g|png|webp|avif)(?:\?[^"'<>\\\s]*)?/gi)) {
+      add(match[0], sourceScore, identityHit ? "embedded-script:listing" : "embedded-script");
+    }
+
+    for (const match of normalized.matchAll(/["'](?:src|url|image|photo|foto|original|large|full)["']\s*:\s*["']([^"']+\.(?:jpe?g|png|webp|avif)(?:\?[^"']*)?)["']/gi)) {
+      add(match[1], sourceScore + 12, "embedded-script:keyed");
+    }
+  });
+
+  const unique = [];
+  const keys = new Set();
+  for (const item of candidates.sort((a,b) => b.score - a.score)) {
+    const key = canonicalImageKey(item.url);
+    if (keys.has(key)) continue;
+    keys.add(key);
+    unique.push(item);
+  }
+  return unique;
+}
+
+function mergeImageCandidateGroups(...groups) {
+  const merged = [];
+  const keys = new Set();
+  for (const group of groups) {
+    for (const item of group || []) {
+      if (!item?.url) continue;
+      const key = canonicalImageKey(item.url);
+      if (keys.has(key)) continue;
+      keys.add(key);
+      merged.push(item);
+    }
+  }
+  return merged.sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
+}
+
 function collectImageCandidates($, pageUrl, jsonLd = [], listingCode = "") {
   const candidates = [];
 
@@ -1588,28 +1817,36 @@ function extractListingData($, pageUrl) {
   }
   if (!area) area = extractArea(`${titulo} ${descricao}`);
 
-  const city = cleanText(address.addressLocality || address.addressRegion || "");
-  const district = cleanText(address.addressDistrict || address.neighborhood || address.subLocality || "");
+  const city = cleanText(address.addressLocality || address.addressRegion || "") ||
+    firstText($, ['[itemprop="addressLocality"]','[data-testid*="city"]','[class*="cidade"]','[class*="city"]']);
+  const district = cleanText(address.addressDistrict || address.neighborhood || address.subLocality || "") ||
+    firstText($, ['[itemprop="addressRegion"]','[data-testid*="neighborhood"]','[class*="bairro"]','[class*="neighborhood"]']);
   const listingCode = extractPropertyCode(pageUrl);
-  const villelaGallery = isVillelaUrl(pageUrl)
+  const villela = isVillelaUrl(pageUrl);
+
+  const specificGallery = villela
     ? collectVillelaGalleryCandidates($, pageUrl, listingCode)
     : [];
-  const embeddedGallery = isVillelaUrl(pageUrl)
+  const specificEmbedded = villela
     ? collectEmbeddedListingImages($, pageUrl, listingCode)
     : [];
 
-  const safeVillelaCandidates = [];
-  const safeKeys = new Set();
-  for (const item of [...villelaGallery, ...embeddedGallery].sort((a, b) => b.score - a.score)) {
-    const key = canonicalImageKey(item.url);
-    if (safeKeys.has(key)) continue;
-    safeKeys.add(key);
-    safeVillelaCandidates.push(item);
-  }
+  const universalGallery = villela ? [] : collectUniversalGalleryCandidates($, pageUrl);
+  const universalEmbedded = villela ? [] : collectUniversalEmbeddedImages($, pageUrl);
+  const genericCandidates = collectImageCandidates($, pageUrl, jsonLd, listingCode);
 
-  const imageCandidates = safeVillelaCandidates.length >= 2
-    ? safeVillelaCandidates
-    : collectImageCandidates($, pageUrl, jsonLd, listingCode);
+  const specificCandidates = mergeImageCandidateGroups(specificGallery, specificEmbedded);
+  const universalCandidates = mergeImageCandidateGroups(universalGallery, universalEmbedded, genericCandidates);
+
+  const imageCandidates = villela && specificCandidates.length >= 2
+    ? specificCandidates
+    : villela
+      ? mergeImageCandidateGroups(specificCandidates, genericCandidates)
+      : universalCandidates;
+
+  const extractionMethod = villela
+    ? (specificCandidates.length >= 2 ? "adaptador-villela" : "villela + fallback universal")
+    : (universalGallery.length >= 2 ? "galeria universal" : universalEmbedded.length >= 2 ? "dados embutidos universais" : "metadados universais");
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
   const featureMap = [
@@ -1638,6 +1875,15 @@ function extractListingData($, pageUrl) {
     diferenciais,
     imagemUrl: imageCandidates[0]?.url || "",
     imagensCandidatas: imageCandidates,
+    extractionMethod,
+    extractionDiagnostics: {
+      dominio: siteDomain(pageUrl),
+      candidatos: imageCandidates.length,
+      galeriaUniversal: universalGallery.length,
+      embutidasUniversais: universalEmbedded.length,
+      especificas: specificCandidates.length,
+      genericas: genericCandidates.length,
+    },
   };
 }
 
@@ -1729,6 +1975,12 @@ app.post("/analisar-imovel", requireAuth, async (req, res) => {
       quantidadeFotosSeguras: downloadedImages.length,
       fontesFotos: downloadedImages.map((item) => item.source),
       urlResolvida: finalPageUrl,
+      dominio: dados.extractionDiagnostics?.dominio || siteDomain(finalPageUrl),
+      metodoExtracao: dados.extractionMethod || "metadados universais",
+      diagnosticoExtracao: {
+        ...(dados.extractionDiagnostics || {}),
+        fotosValidas: downloadedImages.length,
+      },
     };
 
     const foundAnything = Boolean(
