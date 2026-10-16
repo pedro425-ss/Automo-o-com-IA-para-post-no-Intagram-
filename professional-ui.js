@@ -294,6 +294,40 @@
 
       @media(max-width:899px){
         html,body{background:#090d10!important}
+        #desktop-wizard,
+        #desktop-wizard-footer{
+          display:none!important;
+        }
+        .mobile-step-chips{
+          display:flex;
+          gap:6px;
+          overflow-x:auto;
+          margin:2px 0 8px;
+          padding:2px 1px 4px;
+          scrollbar-width:none;
+        }
+        .mobile-step-chips::-webkit-scrollbar{display:none}
+        .mobile-step-chip{
+          flex:0 0 auto;
+          min-height:32px;
+          padding:6px 10px;
+          border-radius:999px;
+          border:1px solid rgba(255,255,255,.08);
+          background:#11171b;
+          color:#98a2a9;
+          font-size:9px;
+          font-weight:850;
+          white-space:nowrap;
+        }
+        .mobile-step-chip.is-active{
+          background:linear-gradient(135deg,#c78d2f,#e5b455);
+          border-color:#d9a445;
+          color:#17120b;
+        }
+        .mobile-step-chip.is-complete{
+          color:#d2d7da;
+          border-color:rgba(255,255,255,.12);
+        }
         body.mobile-wizard-active{padding-top:70px!important;padding-bottom:112px!important;background:#090d10!important}
         #mobile-app-header{
           display:flex;position:fixed;inset:0 0 auto 0;z-index:250;height:62px;
@@ -447,6 +481,23 @@
       $("mobile-menu-button")?.addEventListener("click",()=>document.getElementById("mobile-secondary-toggle")?.click());
     }
 
+    if(!$("mobile-step-chips")){
+      const panel=document.querySelector(".panel");
+      const header=panel?.querySelector(".panel-header");
+      if(panel && header){
+        const chips=document.createElement("div");
+        chips.id="mobile-step-chips";
+        chips.className="mobile-step-chips";
+        chips.innerHTML=${STEPS.map((s,i)=>`<button type="button" class="mobile-step-chip" data-mobile-chip="${i+1}">${i+1}. ${s[1]}</button>`).join("")};
+        header.insertAdjacentElement("afterend",chips);
+        chips.addEventListener("click",e=>{
+          const b=e.target.closest("[data-mobile-chip]");
+          if(!b) return;
+          window.setMobileWizardStep?.(Number(b.dataset.mobileChip));
+        });
+      }
+    }
+
     if(!$("mobile-bottom-nav")){
       const nav=document.createElement("nav");
       nav.id="mobile-bottom-nav";
@@ -546,6 +597,17 @@
     stage.style.transform=`scale(${scale})`;
     stage.style.transformOrigin="top left";
   }
+
+  function updateMobileChips(step){
+    document.querySelectorAll(".mobile-step-chip").forEach((b)=>{
+      const n=Number(b.dataset.mobileChip);
+      b.classList.toggle("is-active",n===step);
+      b.classList.toggle("is-complete",n<step);
+      if(n===step) b.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+    });
+  }
+
+  window.addEventListener("mobile-wizard-step-change",(e)=>updateMobileChips(Number(e.detail||1)));
 
   function sync(){
     const desk=matchMedia(DESKTOP).matches;
