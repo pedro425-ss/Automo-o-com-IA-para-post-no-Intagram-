@@ -100,6 +100,7 @@ app.get("/adjustments.css", (req, res) => sendFrontendFile(res, "adjustments.css
 app.get("/mobile.css", (req, res) => sendFrontendFile(res, "mobile.css"));
 app.get("/adjustments.js", (req, res) => sendFrontendFile(res, "adjustments.js"));
 app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
+app.get("/realty-profile.js", (req, res) => sendFrontendFile(res, "realty-profile.js"));
 app.get("/autofill.js", (req, res) => sendFrontendFile(res, "autofill.js"));
 app.get("/mobile-wizard.js", (req, res) => sendFrontendFile(res, "mobile-wizard.js"));
 app.get("/pwa.js", (req, res) => sendFrontendFile(res, "pwa.js"));
