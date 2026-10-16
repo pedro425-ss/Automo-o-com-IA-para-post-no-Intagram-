@@ -321,6 +321,14 @@ app.get("/Style.css", (req, res) => sendFrontendFile(res, "Style.css"));
 app.get("/adjustments.css", (req, res) => sendFrontendFile(res, "adjustments.css"));
 app.get("/mobile.css", (req, res) => sendFrontendFile(res, "mobile.css"));
 app.get("/adjustments.js", (req, res) => sendFrontendFile(res, "adjustments.js"));
+app.get("/extras.js", (req, res) => sendFrontendFile(res, "extras.js"));
+app.get("/story-set.js", (req, res) => sendFrontendFile(res, "story-set.js"));
+app.get("/templates.js", (req, res) => sendFrontendFile(res, "templates.js"));
+app.get("/workflow.js", (req, res) => sendFrontendFile(res, "workflow.js"));
+app.get("/export-formats.js", (req, res) => sendFrontendFile(res, "export-formats.js"));
+app.get("/properties.js", (req, res) => sendFrontendFile(res, "properties.js"));
+app.get("/logo-library.js", (req, res) => sendFrontendFile(res, "logo-library.js"));
+app.get("/cloud-profiles.js", (req, res) => sendFrontendFile(res, "cloud-profiles.js"));
 app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
 app.get("/realty-profile.js", (req, res) => sendFrontendFile(res, "realty-profile.js"));
 app.get("/professional-ui.js", (req, res) => sendFrontendFile(res, "professional-ui.js"));
@@ -345,29 +353,7 @@ app.get("/pwa-icon-512.png", (req, res) => sendFrontendFile(res, "pwa-icon-512.p
 app.get("/pwa-icon-pro-192.png", (req, res) => sendFrontendFile(res, "pwa-icon-pro-192.png"));
 app.get("/pwa-icon-pro-512.png", (req, res) => sendFrontendFile(res, "pwa-icon-pro-512.png"));
 
-app.get("/script.js", (req, res) => {
-  disableFrontendCache(res);
-  res.type("application/javascript; charset=utf-8");
-
-  try {
-    const mainScript = fs.readFileSync(path.join(frontendDir, "script.js"), "utf8");
-    const extrasScript = fs.readFileSync(path.join(frontendDir, "extras.js"), "utf8");
-    const storySetScript = fs.readFileSync(path.join(frontendDir, "story-set.js"), "utf8");
-    const templatesScript = fs.readFileSync(path.join(frontendDir, "templates.js"), "utf8");
-    const workflowScript = fs.readFileSync(path.join(frontendDir, "workflow.js"), "utf8");
-    const exportFormatsScript = fs.readFileSync(path.join(frontendDir, "export-formats.js"), "utf8");
-    const propertiesScript = fs.readFileSync(path.join(frontendDir, "properties.js"), "utf8");
-    const logoLibraryScript = fs.readFileSync(path.join(frontendDir, "logo-library.js"), "utf8");
-    const cloudProfilesScript = fs.readFileSync(path.join(frontendDir, "cloud-profiles.js"), "utf8");
-
-    return res.send(
-      `${mainScript}\n\n/* Recursos avançados */\n${extrasScript}\n\n/* Pacote de 3 Stories */\n${storySetScript}\n\n/* Modelos de Story */\n${templatesScript}\n\n/* Rascunhos e histórico */\n${workflowScript}\n\n/* Exportação Feed e Quadrado */\n${exportFormatsScript}\n\n/* Painel de imóveis salvos */\n${propertiesScript}\n\n/* Biblioteca de logos */\n${logoLibraryScript}\n\n/* Perfis sincronizados na nuvem */\n${cloudProfilesScript}`
-    );
-  } catch (error) {
-    console.error("❌ Erro ao montar script do frontend:", error.message);
-    return res.status(500).send("console.error('Erro ao carregar o editor.');");
-  }
-});
+app.get("/script.js", (req, res) => sendFrontendFile(res, "script.js"));
 
 app.get("/api/access-config", async (req, res) => {
   const enabled = accessControlEnabled();
