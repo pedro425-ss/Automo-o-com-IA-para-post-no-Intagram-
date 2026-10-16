@@ -7,9 +7,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Pool } from "pg";
 import sharp from "sharp";
+import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "crypto";
 
 const app = express();
-const APP_BUILD = "villela-gallery-deep-scan-20261016-1410";
+const APP_BUILD = "story-access-control-20261016-1535";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,206 @@ function databaseSsl() {
 const pool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: databaseSsl() })
   : null;
+
+const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
+let accessTablesPromise = null;
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function makeId(prefix = "id") {
+  return prefix + "_" + Date.now().toString(36) + "_" + randomBytes(6).toString("hex");
+}
+
+function hashPassword(password, salt = randomBytes(16).toString("hex")) {
+  const hash = scryptSync(String(password || ""), salt, 64).toString("hex");
+  return salt + ":" + hash;
+}
+
+function verifyPassword(password, stored) {
+  try {
+    const [salt, expectedHex] = String(stored || "").split(":");
+    if (!salt || !expectedHex) return false;
+    const actual = scryptSync(String(password || ""), salt, 64);
+    const expected = Buffer.from(expectedHex, "hex");
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  } catch {
+    return false;
+  }
+}
+
+function authSecret() {
+  return process.env.AUTH_SECRET || process.env.BRANDING_SYNC_KEY || "";
+}
+
+function signToken(payload) {
+  const secret = authSecret();
+  if (!secret) throw new Error("AUTH_SECRET não configurado");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = createHmac("sha256", secret).update(body).digest("base64url");
+  return body + "." + sig;
+}
+
+function readToken(token) {
+  const secret = authSecret();
+  if (!secret || !token || !token.includes(".")) return null;
+  const [body, sig] = token.split(".");
+  const expected = createHmac("sha256", secret).update(body).digest("base64url");
+  const a = Buffer.from(sig || "");
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  if (!payload?.uid || !payload?.exp || Date.now() >= Number(payload.exp)) return null;
+  return payload;
+}
+
+async function ensureAccessTables() {
+  if (!pool) throw new Error("DATABASE_URL não configurada");
+  if (!accessTablesPromise) {
+    accessTablesPromise = (async () => {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS access_organizations (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          plan TEXT NOT NULL DEFAULT 'individual',
+          status TEXT NOT NULL DEFAULT 'active',
+          user_limit INTEGER NOT NULL DEFAULT 1,
+          expires_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS access_users (
+          id TEXT PRIMARY KEY,
+          organization_id TEXT REFERENCES access_organizations(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'member',
+          active BOOLEAN NOT NULL DEFAULT TRUE,
+          last_login_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await pool.query("CREATE INDEX IF NOT EXISTS access_users_org_idx ON access_users(organization_id)");
+      await pool.query("CREATE INDEX IF NOT EXISTS access_users_email_idx ON access_users(email)");
+      await bootstrapAdminFromEnv();
+    })().catch((error) => {
+      accessTablesPromise = null;
+      throw error;
+    });
+  }
+  return accessTablesPromise;
+}
+
+async function bootstrapAdminFromEnv() {
+  const email = normalizeEmail(process.env.ADMIN_EMAIL);
+  const password = String(process.env.ADMIN_PASSWORD || "");
+  if (!email || password.length < 8) return;
+
+  const existing = await pool.query("SELECT id FROM access_users WHERE email = $1", [email]);
+  if (existing.rowCount) return;
+
+  const userId = makeId("usr");
+  await pool.query(
+    `INSERT INTO access_users (id, organization_id, name, email, password_hash, role, active)
+     VALUES ($1, NULL, $2, $3, $4, 'superadmin', TRUE)`,
+    [userId, String(process.env.ADMIN_NAME || "Administrador").slice(0, 100), email, hashPassword(password)]
+  );
+  console.log("✅ Administrador inicial criado:", email);
+}
+
+function publicOrganization(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    plan: row.plan,
+    status: row.status,
+    userLimit: row.user_limit,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
+}
+
+function publicUser(row) {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    active: row.active,
+    lastLoginAt: row.last_login_at,
+    createdAt: row.created_at,
+  };
+}
+
+async function loadAuthUser(userId) {
+  await ensureAccessTables();
+  const result = await pool.query(
+    `SELECT
+       u.*,
+       o.name AS org_name,
+       o.plan AS org_plan,
+       o.status AS org_status,
+       o.user_limit AS org_user_limit,
+       o.expires_at AS org_expires_at
+     FROM access_users u
+     LEFT JOIN access_organizations o ON o.id = u.organization_id
+     WHERE u.id = $1
+     LIMIT 1`,
+    [userId]
+  );
+  return result.rows[0] || null;
+}
+
+function organizationAccessState(user) {
+  if (!user || !user.active) return { ok: false, reason: "Usuário desativado." };
+  if (user.role === "superadmin") return { ok: true };
+  if (!user.organization_id) return { ok: false, reason: "Usuário sem imobiliária vinculada." };
+  if (user.org_status !== "active") return { ok: false, reason: "Assinatura bloqueada ou inativa." };
+  if (user.org_expires_at && new Date(user.org_expires_at).getTime() < Date.now()) {
+    return { ok: false, reason: "Assinatura vencida." };
+  }
+  return { ok: true };
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    if (!pool) return res.status(503).json({ erro: "Controle de acesso ainda não configurado no servidor." });
+    const token = String(req.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const payload = readToken(token);
+    if (!payload) return res.status(401).json({ erro: "Sessão inválida ou expirada." });
+
+    const user = await loadAuthUser(payload.uid);
+    const access = organizationAccessState(user);
+    if (!access.ok) return res.status(403).json({ erro: access.reason });
+
+    req.authUser = user;
+    next();
+  } catch (error) {
+    console.error("❌ Auth:", error.message);
+    return res.status(500).json({ erro: "Erro ao validar acesso." });
+  }
+}
+
+function requireOrgAdmin(req, res, next) {
+  if (!["owner", "superadmin"].includes(req.authUser?.role)) {
+    return res.status(403).json({ erro: "Apenas o administrador da imobiliária pode fazer isso." });
+  }
+  next();
+}
+
+function requireSuperAdmin(req, res, next) {
+  if (req.authUser?.role !== "superadmin") {
+    return res.status(403).json({ erro: "Acesso exclusivo do administrador da plataforma." });
+  }
+  next();
+}
 
 let brandingTablePromise = null;
 function ensureBrandingTable() {
@@ -141,6 +342,234 @@ app.get("/script.js", (req, res) => {
   } catch (error) {
     console.error("❌ Erro ao montar script do frontend:", error.message);
     return res.status(500).send("console.error('Erro ao carregar o editor.');");
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    if (!pool) return res.status(503).json({ erro: "DATABASE_URL ainda não configurada." });
+    await ensureAccessTables();
+
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
+    const result = await pool.query("SELECT * FROM access_users WHERE email = $1 LIMIT 1", [email]);
+    const baseUser = result.rows[0];
+
+    if (!baseUser || !verifyPassword(password, baseUser.password_hash)) {
+      return res.status(401).json({ erro: "E-mail ou senha inválidos." });
+    }
+
+    const user = await loadAuthUser(baseUser.id);
+    const access = organizationAccessState(user);
+    if (!access.ok) return res.status(403).json({ erro: access.reason });
+
+    await pool.query("UPDATE access_users SET last_login_at = NOW() WHERE id = $1", [user.id]);
+
+    const token = signToken({
+      uid: user.id,
+      exp: Date.now() + AUTH_TOKEN_TTL_SECONDS * 1000,
+    });
+
+    return res.json({
+      token,
+      user: publicUser(user),
+      organization: user.role === "superadmin" ? null : {
+        id: user.organization_id,
+        name: user.org_name,
+        plan: user.org_plan,
+        status: user.org_status,
+        userLimit: user.org_user_limit,
+        expiresAt: user.org_expires_at,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Login:", error.message);
+    return res.status(500).json({ erro: "Erro ao entrar." });
+  }
+});
+
+app.get("/api/auth/me", requireAuth, async (req, res) => {
+  const user = req.authUser;
+  return res.json({
+    user: publicUser(user),
+    organization: user.role === "superadmin" ? null : {
+      id: user.organization_id,
+      name: user.org_name,
+      plan: user.org_plan,
+      status: user.org_status,
+      userLimit: user.org_user_limit,
+      expiresAt: user.org_expires_at,
+    },
+  });
+});
+
+app.get("/api/account/users", requireAuth, requireOrgAdmin, async (req, res) => {
+  try {
+    if (req.authUser.role === "superadmin") return res.json({ users: [] });
+    const result = await pool.query(
+      "SELECT * FROM access_users WHERE organization_id = $1 ORDER BY created_at ASC",
+      [req.authUser.organization_id]
+    );
+    return res.json({ users: result.rows.map(publicUser) });
+  } catch (error) {
+    return res.status(500).json({ erro: "Erro ao listar usuários." });
+  }
+});
+
+app.post("/api/account/users", requireAuth, requireOrgAdmin, async (req, res) => {
+  try {
+    if (req.authUser.role === "superadmin") return res.status(400).json({ erro: "Selecione uma imobiliária pelo painel administrativo." });
+
+    const orgId = req.authUser.organization_id;
+    const orgResult = await pool.query("SELECT * FROM access_organizations WHERE id = $1", [orgId]);
+    const org = orgResult.rows[0];
+    if (!org) return res.status(404).json({ erro: "Imobiliária não encontrada." });
+
+    const count = await pool.query("SELECT COUNT(*)::int AS total FROM access_users WHERE organization_id = $1 AND active = TRUE", [orgId]);
+    if (Number(count.rows[0]?.total || 0) >= Number(org.user_limit || 1)) {
+      return res.status(409).json({ erro: "Limite de usuários do plano atingido." });
+    }
+
+    const name = String(req.body?.name || "").trim().slice(0, 100);
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
+    if (!name || !email.includes("@")) return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
+    if (password.length < 8) return res.status(400).json({ erro: "A senha precisa ter pelo menos 8 caracteres." });
+
+    const id = makeId("usr");
+    const result = await pool.query(
+      `INSERT INTO access_users (id, organization_id, name, email, password_hash, role, active)
+       VALUES ($1,$2,$3,$4,$5,'member',TRUE)
+       RETURNING *`,
+      [id, orgId, name, email, hashPassword(password)]
+    );
+    return res.status(201).json({ user: publicUser(result.rows[0]) });
+  } catch (error) {
+    if (String(error.code) === "23505") return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+    console.error("❌ Criar usuário:", error.message);
+    return res.status(500).json({ erro: "Erro ao criar usuário." });
+  }
+});
+
+app.patch("/api/account/users/:id", requireAuth, requireOrgAdmin, async (req, res) => {
+  try {
+    if (req.authUser.role === "superadmin") return res.status(400).json({ erro: "Use o painel administrativo." });
+    const userId = String(req.params.id || "");
+    if (userId === req.authUser.id && req.body?.active === false) {
+      return res.status(400).json({ erro: "Você não pode desativar seu próprio acesso." });
+    }
+
+    const result = await pool.query(
+      `UPDATE access_users
+       SET active = COALESCE($1, active), updated_at = NOW()
+       WHERE id = $2 AND organization_id = $3
+       RETURNING *`,
+      [typeof req.body?.active === "boolean" ? req.body.active : null, userId, req.authUser.organization_id]
+    );
+    if (!result.rowCount) return res.status(404).json({ erro: "Usuário não encontrado." });
+    return res.json({ user: publicUser(result.rows[0]) });
+  } catch (error) {
+    return res.status(500).json({ erro: "Erro ao atualizar usuário." });
+  }
+});
+
+app.get("/api/admin/organizations", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT o.*,
+        COUNT(u.id)::int AS total_users,
+        COUNT(u.id) FILTER (WHERE u.active = TRUE)::int AS active_users
+      FROM access_organizations o
+      LEFT JOIN access_users u ON u.organization_id = o.id
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `);
+    return res.json({ organizations: result.rows.map((row) => ({
+      ...publicOrganization(row),
+      totalUsers: row.total_users,
+      activeUsers: row.active_users,
+    })) });
+  } catch (error) {
+    return res.status(500).json({ erro: "Erro ao listar imobiliárias." });
+  }
+});
+
+app.post("/api/admin/organizations", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const name = String(req.body?.name || "").trim().slice(0, 120);
+    const ownerName = String(req.body?.ownerName || "").trim().slice(0, 100);
+    const ownerEmail = normalizeEmail(req.body?.ownerEmail);
+    const password = String(req.body?.password || "");
+    const plan = ["individual","imobiliaria","equipe"].includes(req.body?.plan) ? req.body.plan : "individual";
+    const limits = { individual: 1, imobiliaria: 5, equipe: 10 };
+    const userLimit = Math.max(1, Math.min(100, Number(req.body?.userLimit || limits[plan])));
+    const days = Math.max(1, Math.min(3650, Number(req.body?.days || 30)));
+
+    if (!name || !ownerName || !ownerEmail.includes("@")) return res.status(400).json({ erro: "Preencha imobiliária, responsável e e-mail." });
+    if (password.length < 8) return res.status(400).json({ erro: "A senha inicial precisa ter pelo menos 8 caracteres." });
+
+    const orgId = makeId("org");
+    const userId = makeId("usr");
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const orgResult = await client.query(
+        `INSERT INTO access_organizations (id,name,plan,status,user_limit,expires_at)
+         VALUES ($1,$2,$3,'active',$4,NOW() + ($5 || ' days')::interval)
+         RETURNING *`,
+        [orgId, name, plan, userLimit, String(days)]
+      );
+      const userResult = await client.query(
+        `INSERT INTO access_users (id,organization_id,name,email,password_hash,role,active)
+         VALUES ($1,$2,$3,$4,$5,'owner',TRUE)
+         RETURNING *`,
+        [userId, orgId, ownerName, ownerEmail, hashPassword(password)]
+      );
+      await client.query("COMMIT");
+      return res.status(201).json({
+        organization: publicOrganization(orgResult.rows[0]),
+        owner: publicUser(userResult.rows[0]),
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    if (String(error.code) === "23505") return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+    console.error("❌ Criar imobiliária:", error.message);
+    return res.status(500).json({ erro: "Erro ao criar imobiliária." });
+  }
+});
+
+app.patch("/api/admin/organizations/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const allowedPlans = ["individual","imobiliaria","equipe"];
+    const plan = allowedPlans.includes(req.body?.plan) ? req.body.plan : null;
+    const status = ["active","blocked","inactive"].includes(req.body?.status) ? req.body.status : null;
+    const userLimit = Number.isFinite(Number(req.body?.userLimit)) ? Math.max(1, Math.min(100, Number(req.body.userLimit))) : null;
+    const addDays = Number.isFinite(Number(req.body?.addDays)) ? Math.max(0, Math.min(3650, Number(req.body.addDays))) : 0;
+
+    const result = await pool.query(
+      `UPDATE access_organizations SET
+        plan = COALESCE($1, plan),
+        status = COALESCE($2, status),
+        user_limit = COALESCE($3, user_limit),
+        expires_at = CASE
+          WHEN $4::int > 0 THEN GREATEST(COALESCE(expires_at, NOW()), NOW()) + ($4 || ' days')::interval
+          ELSE expires_at
+        END,
+        updated_at = NOW()
+       WHERE id = $5
+       RETURNING *`,
+      [plan, status, userLimit, addDays, id]
+    );
+    if (!result.rowCount) return res.status(404).json({ erro: "Imobiliária não encontrada." });
+    return res.json({ organization: publicOrganization(result.rows[0]) });
+  } catch (error) {
+    return res.status(500).json({ erro: "Erro ao atualizar imobiliária." });
   }
 });
 
@@ -1212,7 +1641,7 @@ function extractListingData($, pageUrl) {
   };
 }
 
-app.post("/analisar-imovel", async (req, res) => {
+app.post("/analisar-imovel", requireAuth, async (req, res) => {
   try {
     const { url } = req.body || {};
     if (!url) return res.status(400).json({ erro: "URL não enviada" });
