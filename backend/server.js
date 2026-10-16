@@ -300,6 +300,123 @@ function findImageFromJsonLd(items) {
   return "";
 }
 
+
+function addImageCandidate(list, candidate, pageUrl, score = 0, source = "") {
+  const raw = cleanText(candidate);
+  if (!raw) return;
+
+  const values = raw.includes(",") && /\s\d+(?:w|x)(?:,|$)/i.test(raw)
+    ? raw.split(",").map((part) => part.trim().split(/\s+/)[0])
+    : [raw];
+
+  for (const value of values) {
+    if (!value || /^data:/i.test(value)) continue;
+    const url = absoluteUrl(value, pageUrl);
+    if (!/^https?:\/\//i.test(url)) continue;
+
+    let finalScore = score;
+    const lower = url.toLowerCase();
+    if (/(logo|icon|favicon|avatar|sprite|placeholder|loading|blank)/i.test(lower)) finalScore -= 80;
+    if (/(imovel|property|foto|photo|image|img|galeria|gallery)/i.test(lower)) finalScore += 18;
+
+    const existing = list.find((item) => item.url === url);
+    if (existing) {
+      existing.score = Math.max(existing.score, finalScore);
+      if (!existing.source && source) existing.source = source;
+      continue;
+    }
+    list.push({ url, score: finalScore, source });
+  }
+}
+
+function collectImageCandidates($, pageUrl, jsonLd = []) {
+  const candidates = [];
+
+  [
+    ['meta[property="og:image:secure_url"]', 120, "og:image:secure_url"],
+    ['meta[property="og:image"]', 115, "og:image"],
+    ['meta[name="twitter:image"]', 110, "twitter:image"],
+    ['meta[name="twitter:image:src"]', 108, "twitter:image:src"],
+    ['link[rel="image_src"]', 105, "image_src"],
+  ].forEach(([selector, score, source]) => {
+    const attr = selector.startsWith("link") ? "href" : "content";
+    $(selector).each((_, el) => addImageCandidate(candidates, $(el).attr(attr), pageUrl, score, source));
+  });
+
+  for (const item of jsonLd) {
+    const image = item?.image;
+    const values = Array.isArray(image) ? image : image ? [image] : [];
+    values.forEach((value) => {
+      if (typeof value === "string") addImageCandidate(candidates, value, pageUrl, 112, "json-ld:image");
+      else if (value?.url) addImageCandidate(candidates, value.url, pageUrl, 112, "json-ld:image");
+      else if (value?.contentUrl) addImageCandidate(candidates, value.contentUrl, pageUrl, 112, "json-ld:contentUrl");
+    });
+    if (item?.thumbnailUrl) addImageCandidate(candidates, item.thumbnailUrl, pageUrl, 92, "json-ld:thumbnail");
+  }
+
+  $("img").each((index, el) => {
+    const img = $(el);
+    const width = Number(img.attr("width") || img.attr("data-width") || 0);
+    const height = Number(img.attr("height") || img.attr("data-height") || 0);
+    const areaBonus = width && height ? Math.min(28, Math.log10(Math.max(1, width * height)) * 4) : 0;
+    const classAndAlt = ((img.attr("class") || "") + " " + (img.attr("alt") || "")).toLowerCase();
+    let semanticBonus = 0;
+    if (/(principal|destaque|gallery|galeria|imovel|property|foto)/i.test(classAndAlt)) semanticBonus += 24;
+    if (/(logo|icone|icon|avatar)/i.test(classAndAlt)) semanticBonus -= 70;
+
+    const baseScore = 54 - Math.min(index, 18) + areaBonus + semanticBonus;
+    ["src", "data-src", "data-lazy-src", "data-original", "data-image", "data-url"].forEach((attr) => {
+      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore, "img:" + attr);
+    });
+    ["srcset", "data-srcset"].forEach((attr) => {
+      addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore + 6, "img:" + attr);
+    });
+  });
+
+  $('[style*="background"]').each((index, el) => {
+    const style = $(el).attr("style") || "";
+    const matches = [...style.matchAll(/url\((['"]?)(.*?)\1\)/gi)];
+    matches.forEach((match) => addImageCandidate(candidates, match[2], pageUrl, 48 - Math.min(index, 12), "background-image"));
+  });
+
+  return candidates.sort((a, b) => b.score - a.score);
+}
+
+async function downloadFirstValidImage(candidates, pageUrl) {
+  const errors = [];
+  for (const candidate of candidates.slice(0, 24)) {
+    try {
+      const response = await axios.get(candidate.url, {
+        responseType: "arraybuffer",
+        timeout: 12000,
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+          "Referer": pageUrl,
+        },
+      });
+
+      const contentType = String(response.headers["content-type"] || "").toLowerCase();
+      const buffer = Buffer.from(response.data || []);
+      if (!buffer.length) throw new Error("arquivo vazio");
+      if (!contentType.startsWith("image/")) throw new Error("tipo inválido: " + (contentType || "sem content-type"));
+      if (buffer.length < 2500 && !contentType.includes("svg")) throw new Error("imagem pequena demais");
+
+      return {
+        base64: "data:" + contentType.split(";")[0] + ";base64," + buffer.toString("base64"),
+        url: candidate.url,
+        source: candidate.source,
+      };
+    } catch (error) {
+      errors.push((candidate.source || "imagem") + ": " + error.message);
+    }
+  }
+  return { base64: "", url: "", source: "", errors };
+}
+
 function formatPrice(value, currency = "BRL") {
   const raw = cleanText(value);
   if (!raw) return "";
@@ -341,7 +458,7 @@ function extractListingData($, pageUrl) {
 
   const city = cleanText(address.addressLocality || address.addressRegion || "");
   const district = cleanText(address.addressDistrict || address.neighborhood || address.subLocality || "");
-  const imageCandidate = firstAttr($, ['meta[property="og:image"]', 'meta[name="twitter:image"]']) || findImageFromJsonLd(jsonLd) || $("img").first().attr("src") || "";
+  const imageCandidates = collectImageCandidates($, pageUrl, jsonLd);
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
   const featureMap = [
@@ -360,41 +477,89 @@ function extractListingData($, pageUrl) {
   ];
   const diferenciais = featureMap.filter(([, keywords]) => keywords.some((keyword) => searchable.includes(keyword))).map(([label]) => label);
 
-  return { titulo, preco: formatPrice(rawPrice, currency), cidade: city, bairro: district, area, descricao, diferenciais, imagemUrl: absoluteUrl(imageCandidate, pageUrl) };
+  return {
+    titulo,
+    preco: formatPrice(rawPrice, currency),
+    cidade: city,
+    bairro: district,
+    area,
+    descricao,
+    diferenciais,
+    imagemUrl: imageCandidates[0]?.url || "",
+    imagensCandidatas: imageCandidates,
+  };
 }
 
 app.post("/analisar-imovel", async (req, res) => {
   try {
-    const { url } = req.body;
+    const { url } = req.body || {};
     if (!url) return res.status(400).json({ erro: "URL não enviada" });
 
-    console.log("🔎 Buscando imóvel:", url);
-    const response = await axios.get(url, {
-      timeout: 15000,
+    let pageUrl;
+    try {
+      pageUrl = new URL(url).href;
+    } catch {
+      return res.status(400).json({ erro: "URL inválida" });
+    }
+
+    console.log("🔎 Buscando imóvel:", pageUrl);
+    const response = await axios.get(pageUrl, {
+      timeout: 18000,
       maxRedirects: 5,
+      validateStatus: (status) => status >= 200 && status < 400,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Referer": pageUrl,
       },
     });
 
+    const finalPageUrl = response.request?.res?.responseUrl || pageUrl;
     const $ = cheerio.load(response.data);
-    const dados = extractListingData($, url);
-    if (!dados.imagemUrl) return res.status(404).json({ erro: "Imagem não encontrada", dados });
+    const dados = extractListingData($, finalPageUrl);
 
-    const imageResponse = await axios.get(dados.imagemUrl, {
-      responseType: "arraybuffer",
-      timeout: 15000,
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36" },
+    const downloaded = await downloadFirstValidImage(dados.imagensCandidatas || [], finalPageUrl);
+    const publicData = {
+      titulo: dados.titulo,
+      preco: dados.preco,
+      cidade: dados.cidade,
+      bairro: dados.bairro,
+      area: dados.area,
+      descricao: dados.descricao,
+      diferenciais: dados.diferenciais,
+      imagemUrl: downloaded.url || dados.imagemUrl || "",
+    };
+
+    if (!downloaded.base64) {
+      console.warn("⚠️ Imagem não baixada. Candidatas:", (dados.imagensCandidatas || []).slice(0, 5).map((item) => item.url));
+      return res.status(404).json({
+        erro: "Não consegui baixar uma imagem válida deste anúncio.",
+        dados: publicData,
+        imagemUrl: publicData.imagemUrl,
+        candidatos: (dados.imagensCandidatas || []).slice(0, 8).map(({ url, source }) => ({ url, source })),
+      });
+    }
+
+    console.log("✅ Imagem encontrada:", downloaded.source, downloaded.url);
+    return res.json({
+      ...publicData,
+      imagem: downloaded.base64,
+      imagemUrl: downloaded.url,
+      fonteImagem: downloaded.source,
+      dados: publicData,
     });
-
-    const contentType = imageResponse.headers["content-type"] || "image/jpeg";
-    const base64 = `data:${contentType};base64,` + Buffer.from(imageResponse.data).toString("base64");
-
-    return res.json({ imagem: base64, titulo: dados.titulo, preco: dados.preco, cidade: dados.cidade, bairro: dados.bairro, area: dados.area, descricao: dados.descricao, diferenciais: dados.diferenciais });
   } catch (error) {
-    console.error("❌ Erro:", error.message);
-    return res.status(500).json({ erro: "Erro ao analisar o imóvel", detalhe: process.env.NODE_ENV === "development" ? error.message : undefined });
+    const status = error?.response?.status;
+    console.error("❌ Erro ao analisar imóvel:", status || "", error.message);
+    return res.status(status && status >= 400 && status < 500 ? 502 : 500).json({
+      erro: status
+        ? "O site do imóvel respondeu com erro " + status + "."
+        : "Erro ao analisar o imóvel",
+      detalhe: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 
