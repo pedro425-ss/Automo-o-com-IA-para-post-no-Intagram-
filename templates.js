@@ -242,6 +242,9 @@
         cta.style.setProperty("background", template.theme.ctaBg, "important");
         cta.style.setProperty("border-color", template.theme.ctaBorder, "important");
       }
+      setTimeout(() => {
+        try { window.reapplyBrandTheme?.(); } catch {}
+      }, 0);
     });
 
     observer.observe(story, { childList: true, subtree: true, characterData: true });
