@@ -9,7 +9,7 @@ import { Pool } from "pg";
 import sharp from "sharp";
 
 const app = express();
-const APP_BUILD = "villela-gallery-visual-dedupe-20261016-1352";
+const APP_BUILD = "villela-embedded-gallery-20261016-1400";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -512,6 +512,124 @@ function addImageCandidate(list, candidate, pageUrl, score = 0, source = "", lis
   }
 }
 
+function collectEmbeddedListingImages($, pageUrl, listingCode = "") {
+  const candidates = [];
+  if (!listingCode) return candidates;
+
+  const imageKeys = /^(?:image|images|photo|photos|foto|fotos|gallery|galeria|pictures|media|slides)$/i;
+
+  function collectFromValue(value, score = 210, source = "embedded-data") {
+    if (!value) return;
+
+    if (typeof value === "string") {
+      const cleaned = value
+        .replace(/\\u002F/gi, "/")
+        .replace(/\\\//g, "/")
+        .replace(/&amp;/g, "&");
+      if (/^https?:\/\//i.test(cleaned) || /\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(cleaned)) {
+        addImageCandidate(candidates, cleaned, pageUrl, score, source, listingCode);
+      }
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectFromValue(item, score, source));
+      return;
+    }
+
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([key, nested]) => {
+        const nextScore = imageKeys.test(key) ? score + 35 : score - 4;
+        if (
+          imageKeys.test(key) ||
+          typeof nested === "object" ||
+          (typeof nested === "string" && /(?:https?:\/\/|\.(?:jpe?g|png|webp|avif))/i.test(nested))
+        ) {
+          collectFromValue(nested, nextScore, source + ":" + key);
+        }
+      });
+    }
+  }
+
+  function objectMentionsListing(value) {
+    if (!value || typeof value !== "object") return false;
+    try {
+      return JSON.stringify(value).toUpperCase().includes(listingCode.toUpperCase());
+    } catch {
+      return false;
+    }
+  }
+
+  $("script").each((_, el) => {
+    const raw = $(el).html() || "";
+    if (!raw || !raw.toUpperCase().includes(listingCode.toUpperCase())) return;
+
+    // Primeiro tenta JSON real e coleta somente ramos que pertencem ao imóvel atual.
+    try {
+      const parsed = JSON.parse(raw.trim());
+
+      const walk = (value, depth = 0) => {
+        if (!value || depth > 12) return;
+
+        if (Array.isArray(value)) {
+          value.forEach((item) => walk(item, depth + 1));
+          return;
+        }
+
+        if (typeof value !== "object") return;
+
+        if (objectMentionsListing(value)) {
+          const directKeys = Object.keys(value).filter((key) => imageKeys.test(key));
+          if (directKeys.length) {
+            directKeys.forEach((key) => collectFromValue(value[key], 250, "embedded-json:" + key));
+          }
+        }
+
+        Object.values(value).forEach((nested) => {
+          if (nested && typeof nested === "object") walk(nested, depth + 1);
+        });
+      };
+
+      walk(parsed);
+    } catch {}
+
+    // Fallback para estados JS serializados: lê somente uma janela próxima ao código do imóvel.
+    const upper = raw.toUpperCase();
+    let offset = 0;
+    while (true) {
+      const hit = upper.indexOf(listingCode.toUpperCase(), offset);
+      if (hit < 0) break;
+
+      const start = Math.max(0, hit - 35000);
+      const end = Math.min(raw.length, hit + 35000);
+      const slice = raw.slice(start, end)
+        .replace(/\\u002F/gi, "/")
+        .replace(/\\\//g, "/");
+
+      for (const match of slice.matchAll(/https?:\/\/[^"'<>\\\s]+?(?:jpe?g|png|webp|avif)(?:\?[^"'<>\\\s]*)?/gi)) {
+        addImageCandidate(candidates, match[0], pageUrl, 205, "embedded-script", listingCode);
+      }
+
+      offset = hit + listingCode.length;
+    }
+  });
+
+  const unique = [];
+  const used = new Set();
+  for (const item of candidates.sort((a, b) => b.score - a.score)) {
+    const key = canonicalImageKey(item.url);
+    if (used.has(key)) continue;
+    used.add(key);
+    unique.push(item);
+  }
+
+  if (unique.length) {
+    console.log("✅ Fotos embutidas do anúncio Villela:", unique.length);
+  }
+
+  return unique;
+}
+
 function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
   const containers = [];
   const selectors = [
@@ -984,8 +1102,21 @@ function extractListingData($, pageUrl) {
   const villelaGallery = isVillelaUrl(pageUrl)
     ? collectVillelaGalleryCandidates($, pageUrl, listingCode)
     : [];
-  const imageCandidates = villelaGallery.length >= 2
-    ? villelaGallery
+  const embeddedGallery = isVillelaUrl(pageUrl)
+    ? collectEmbeddedListingImages($, pageUrl, listingCode)
+    : [];
+
+  const safeVillelaCandidates = [];
+  const safeKeys = new Set();
+  for (const item of [...villelaGallery, ...embeddedGallery].sort((a, b) => b.score - a.score)) {
+    const key = canonicalImageKey(item.url);
+    if (safeKeys.has(key)) continue;
+    safeKeys.add(key);
+    safeVillelaCandidates.push(item);
+  }
+
+  const imageCandidates = safeVillelaCandidates.length >= 2
+    ? safeVillelaCandidates
     : collectImageCandidates($, pageUrl, jsonLd, listingCode);
 
   const searchable = cleanText(`${titulo} ${descricao}`).toLocaleLowerCase("pt-BR");
@@ -1104,6 +1235,7 @@ app.post("/analisar-imovel", async (req, res) => {
       imagens: downloadedImages.map((item) => item.base64),
       imagensUrls: downloadedImages.map((item) => item.url),
       quantidadeFotosSeguras: downloadedImages.length,
+      fontesFotos: downloadedImages.map((item) => item.source),
       urlResolvida: finalPageUrl,
     };
 
