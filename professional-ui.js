@@ -32,7 +32,7 @@
         --app-dark-line:rgba(255,255,255,.09);
       }
 
-      #app-sidebar,#mobile-app-header,#mobile-bottom-nav{display:none}
+      #app-sidebar,#mobile-app-header,#mobile-bottom-nav,#mobile-step-chips{display:none}
 
       @media(min-width:900px){
         html,body{background:#eef1f3!important;color:var(--app-ink)!important}
@@ -209,7 +209,14 @@
         }
         body.desktop-wizard-active .realty-profile-summary{background:#eef1f3!important;color:#697079!important}
         body.desktop-wizard-active #realty-profile-panel{
-          background:#fff!important;border-color:#e2e5e8!important;color:#171b20!important
+          background:#fff!important;border-color:#e2e5e8!important;color:#171b20!important;
+          margin-top:12px!important;padding:18px!important
+        }
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-card-grid{
+          gap:10px!important
+        }
+        body.desktop-wizard-active #realty-profile-panel .realty-profile-card{
+          min-height:92px!important;padding:12px!important;border-radius:12px!important
         }
         body.desktop-wizard-active #realty-profile-panel .realty-profile-title{color:#171b20!important}
         body.desktop-wizard-active #realty-profile-panel .realty-profile-subtitle{color:#7b838b!important;opacity:1!important}
@@ -335,7 +342,7 @@
           display:none!important;
         }
         .mobile-step-chips{
-          display:flex;
+          display:flex!important;
           gap:6px;
           overflow-x:auto;
           margin:2px 0 8px;
