@@ -557,6 +557,23 @@ function collectImageCandidates($, pageUrl, jsonLd = []) {
     matches.forEach((match) => addImageCandidate(candidates, match[2], pageUrl, 48 - Math.min(index, 12), "background-image"));
   });
 
+  $("a[href]").each((index, el) => {
+    const href = $(el).attr("href") || "";
+    if (/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)) {
+      addImageCandidate(candidates, href, pageUrl, 60 - Math.min(index, 20), "link:image");
+    }
+  });
+
+  $("[data-image],[data-src],[data-url],[data-full],[data-large],[data-original]").each((index, el) => {
+    const node = $(el);
+    ["data-image","data-src","data-url","data-full","data-large","data-original"].forEach((attr) => {
+      const value = node.attr(attr) || "";
+      if (/https?:\/\/|\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(value)) {
+        addImageCandidate(candidates, value, pageUrl, 52 - Math.min(index, 18), "data:" + attr);
+      }
+    });
+  });
+
   return candidates.sort((a, b) => b.score - a.score);
 }
 
@@ -595,11 +612,35 @@ async function downloadFirstValidImage(candidates, pageUrl) {
   return { base64: "", url: "", source: "", errors };
 }
 
-async function downloadValidImages(candidates, pageUrl, limit = 4) {
+function canonicalImageKey(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    url.hash = "";
+    [
+      "w","h","width","height","resize","fit","crop","quality","q","format",
+      "fm","auto","dpr","sharp","tr","transform"
+    ].forEach((key) => url.searchParams.delete(key));
+
+    let pathName = url.pathname.toLowerCase();
+    pathName = pathName
+      .replace(/[-_](?:\d{2,4})x(?:\d{2,4})(?=\.[a-z]{2,5}$)/i, "")
+      .replace(/\/(?:thumb|thumbnail|small|medium|large|original)\//gi, "/")
+      .replace(/\/(?:w|h|width|height)[-_]?\d{2,4}\//gi, "/");
+
+    return url.hostname.toLowerCase() + pathName;
+  } catch {
+    return String(rawUrl || "").toLowerCase().split("?")[0].split("#")[0];
+  }
+}
+
+async function downloadValidImages(candidates, pageUrl, limit = 6) {
   const images = [];
   const buffers = [];
+  const usedKeys = new Set();
 
-  for (const candidate of candidates.slice(0, 36)) {
+  for (const candidate of candidates.slice(0, 60)) {
+    const key = canonicalImageKey(candidate.url);
+    if (usedKeys.has(key)) continue;
     if (images.length >= limit) break;
     try {
       const response = await axios.get(candidate.url, {
@@ -625,6 +666,7 @@ async function downloadValidImages(candidates, pageUrl, limit = 4) {
       const duplicate = buffers.some((existing) => existing.length === buffer.length && existing.equals(buffer));
       if (duplicate) continue;
 
+      usedKeys.add(key);
       buffers.push(buffer);
       images.push({
         base64: "data:" + contentType.split(";")[0] + ";base64," + buffer.toString("base64"),
@@ -782,7 +824,7 @@ app.post("/analisar-imovel", async (req, res) => {
       }
     }
 
-    const downloadedImages = await downloadValidImages(dados.imagensCandidatas || [], finalPageUrl, 4);
+    const downloadedImages = await downloadValidImages(dados.imagensCandidatas || [], finalPageUrl, 6);
     const downloaded = downloadedImages[0] || await downloadFirstValidImage(dados.imagensCandidatas || [], finalPageUrl);
     const publicData = {
       titulo: dados.titulo,
