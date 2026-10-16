@@ -297,16 +297,14 @@
     let listingImages = Array.isArray(window.__listingImages) ? window.__listingImages.slice(0, 8) : [];
     let slides = [];
     let activeIndex = 0;
-    let lastSafeStory2Image = "";
 
     window.addEventListener("listing-images-loaded", (event) => {
       const images = Array.isArray(event.detail?.images) ? event.detail.images.filter(Boolean) : [];
       listingImages = images.slice(0, 8);
       if (!uploadedImages.length && status) {
-        status.textContent = "Fotos seguras do anúncio carregadas. Os Stories 2 e 3 usarão novas fotos quando disponíveis."
+        status.textContent = "Fotos da galeria do anúncio carregadas. Story 1, 2 e 3 usam fotos diferentes quando houver 3 imagens válidas."
       }
       slides = [];
-      lastSafeStory2Image = "";
       nav?.classList.add("hidden");
     });
 
@@ -351,10 +349,10 @@
         safeListingImages[1] ||
         mainImage;
 
-      // Automaticamente, o Story 3 reutiliza a segunda foto já validada.
-      // Uma terceira foto diferente só é usada quando foi escolhida manualmente.
       const thirdImage =
         manualImages[2] ||
+        safeListingImages[2] ||
+        safeListingImages[1] ||
         secondImage ||
         mainImage;
 
@@ -422,15 +420,7 @@
       const slide = slides[index];
       if (!slide) return;
 
-      if (activeIndex === 1 && storyImage?.src) {
-        lastSafeStory2Image = storyImage.src;
-      }
-
       activeIndex = index;
-
-      if (index === 2) {
-        slide.image = lastSafeStory2Image || slides[1]?.image || storyImage?.src || slide.image;
-      }
 
       if (storyBadge) storyBadge.textContent = slide.badge;
       if (storyTitle) storyTitle.textContent = slide.title;
@@ -453,10 +443,6 @@
       galleryGrid.classList.add("hidden");
 
       await setStoryImage(slide.image);
-
-      if (index === 1 && storyImage?.src) {
-        lastSafeStory2Image = storyImage.src;
-      }
 
       const posX = $("pos-x");
       const posY = $("pos-y");
@@ -483,8 +469,7 @@
         uploadedImages = await Promise.all(files.map(readFileAsDataUrl));
         slides = [];
         activeIndex = 0;
-        lastSafeStory2Image = "";
-        nav?.classList.add("hidden");
+          nav?.classList.add("hidden");
         if (status) status.textContent = `${uploadedImages.length} foto(s) carregada(s). Clique em “Gerar 3 Stories”.`;
       } catch (error) {
         console.error("Erro ao ler as fotos:", error);
@@ -494,7 +479,6 @@
 
     buildButton?.addEventListener("click", async () => {
       slides = buildSlides();
-      lastSafeStory2Image = "";
       if (!slides.length) {
         alert("Selecione pelo menos uma foto antes de gerar os Stories.");
         return;
