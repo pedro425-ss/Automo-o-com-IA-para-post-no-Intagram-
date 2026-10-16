@@ -165,6 +165,34 @@
             button.textContent = originalText || "Buscar imagem e dados";
           }, 1800);
 
+          const method = json.metodoExtracao || data.metodoExtracao || "";
+          const domain = json.dominio || data.dominio || "";
+          const safePhotos = Number(json.quantidadeFotosSeguras || data.quantidadeFotosSeguras || 0);
+
+          if (method || domain) {
+            console.log("🧭 Extração imobiliária:", {
+              dominio: domain,
+              metodo: method,
+              fotosValidas: safePhotos,
+              diagnostico: json.diagnosticoExtracao || data.diagnosticoExtracao || {}
+            });
+
+            const statusHint = document.getElementById("universal-extractor-status") || (() => {
+              const el = document.createElement("div");
+              el.id = "universal-extractor-status";
+              el.className = "hint";
+              el.style.marginTop = "8px";
+              button.insertAdjacentElement("afterend", el);
+              return el;
+            })();
+
+            statusHint.textContent = [
+              domain ? "Site: " + domain : "",
+              method ? "Método: " + method : "",
+              safePhotos ? safePhotos + " foto" + (safePhotos === 1 ? "" : "s") + " válida" + (safePhotos === 1 ? "" : "s") : ""
+            ].filter(Boolean).join(" • ");
+          }
+
           console.log("✅ Dados automáticos encontrados:", found);
         } catch (error) {
           console.error("Erro no preenchimento automático:", error);
