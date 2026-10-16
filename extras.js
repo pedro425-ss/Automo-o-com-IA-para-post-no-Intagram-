@@ -61,7 +61,9 @@
       .story-extra-btn{min-height:44px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.06);color:white;font-size:12px;font-weight:800;cursor:pointer}
       .story-extra-btn:active{background:rgba(200,139,58,.22)}
 
-      .story-qr-card{display:none;align-items:center;justify-content:space-between;gap:24px;width:100%;margin:0 0 24px;padding:20px 22px;border-radius:30px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+      .story-qr-card{display:none;align-items:center;justify-content:space-between;gap:24px;width:100%;margin:0 0 24px;padding:20px 22px;border-radius:30px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);cursor:pointer;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+      .story-qr-card:hover{transform:translateY(-2px);background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.26)}
+      .story-qr-card:focus-visible{outline:3px solid rgba(255,255,255,.72);outline-offset:4px}
       .story-qr-card.is-visible{display:flex}
       .story-qr-copy{flex:1;min-width:0}
       .story-qr-title{font-size:32px;font-weight:900;line-height:1.15;margin-bottom:6px}
@@ -151,10 +153,14 @@
     card = document.createElement("div");
     card.id = "story-qr-card";
     card.className = "story-qr-card";
+    card.setAttribute("role", "link");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", "Abrir link de mais fotos");
     card.innerHTML = `
       <div class="story-qr-copy">
         <div class="story-qr-title">Veja mais fotos</div>
         <div id="story-qr-link" class="story-qr-link"></div>
+        <div class="story-qr-link" style="margin-top:6px;font-size:20px;opacity:.72">Clique aqui ou escaneie o QR Code</div>
       </div>
       <div class="story-qr-box"><img id="story-qr-image" class="story-qr-image" alt="QR Code para mais fotos" /></div>
     `;
@@ -358,6 +364,8 @@
       const linkText = byId("story-qr-link");
       if (img) img.src = qr.toDataURL("image/png");
       if (linkText) linkText.textContent = getDisplayUrl(url);
+      card.dataset.href = url;
+      card.title = "Abrir " + getDisplayUrl(url);
       card.classList.add("is-visible");
       if (status) status.textContent = "QR Code pronto e incluído no PNG.";
       saveSettings({ morePhotosUrl: raw, showQr: enabled });
@@ -443,6 +451,20 @@
     byId("brand-name")?.addEventListener("input", applyBrandName);
     byId("more-photos-url")?.addEventListener("input", updateQrCard);
     byId("show-qr")?.addEventListener("change", updateQrCard);
+
+    const qrCard = byId("story-qr-card");
+    const openQrLink = () => {
+      const href = qrCard?.dataset.href || "";
+      if (!href) return;
+      window.open(href, "_blank", "noopener,noreferrer");
+    };
+    qrCard?.addEventListener("click", openQrLink);
+    qrCard?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openQrLink();
+      }
+    });
     byId("content-y")?.addEventListener("input", applyContentPosition);
     byId("logo-size")?.addEventListener("input", applyLogoSettings);
     byId("logo-position")?.addEventListener("change", applyLogoSettings);
