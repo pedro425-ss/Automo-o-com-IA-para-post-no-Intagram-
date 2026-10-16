@@ -396,6 +396,9 @@ document.addEventListener("DOMContentLoaded", () => {
     story.addEventListener("pointerdown", (event) => {
       if (!storyImage.src || storyImage.classList.contains("hidden")) return;
 
+      // Elementos interativos do Story precisam receber o clique normalmente.
+      if (event.target?.closest?.("#story-qr-card")) return;
+
       event.preventDefault();
       story.setPointerCapture?.(event.pointerId);
       pointers.set(event.pointerId, {
