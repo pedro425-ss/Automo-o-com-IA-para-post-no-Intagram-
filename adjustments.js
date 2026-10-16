@@ -49,13 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function applyProfessionalAdjustments() {
-    const zoomScale = Number(zoom.value || 100) / 100;
-    const x = Number(posX.value || 50);
-    const y = Number(posY.value || 50);
-
-    image.style.transformOrigin = `${x}% ${y}%`;
-    image.style.transform = `scale(${zoomScale})`;
     updateLabels();
+    posX.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function notifyMainScript() {
@@ -102,18 +97,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   zoom.addEventListener("input", () => {
-    applyProfessionalAdjustments();
-    notifyMainScript();
-  });
-
-  zoom.addEventListener("change", () => {
-    applyProfessionalAdjustments();
-    notifyMainScript();
+    updateLabels();
+    zoom.dispatchEvent(new Event("change", { bubbles: true }));
   });
 
   [posX, posY].forEach((control) => {
-    control.addEventListener("input", applyProfessionalAdjustments);
-    control.addEventListener("change", applyProfessionalAdjustments);
+    control.addEventListener("input", updateLabels);
+    control.addEventListener("change", updateLabels);
   });
 
   presetButtons.forEach((button) => {
@@ -125,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       posX.dispatchEvent(new Event("input", { bubbles: true }));
       posY.dispatchEvent(new Event("input", { bubbles: true }));
-      applyProfessionalAdjustments();
+      updateLabels();
     });
   });
 
@@ -140,11 +130,11 @@ document.addEventListener("DOMContentLoaded", () => {
     containBg?.dispatchEvent(new Event("change", { bubbles: true }));
     posX.dispatchEvent(new Event("input", { bubbles: true }));
     posY.dispatchEvent(new Event("input", { bubbles: true }));
-
-    applyProfessionalAdjustments();
+    zoom.dispatchEvent(new Event("input", { bubbles: true }));
+    updateLabels();
   });
 
-  image.addEventListener("load", applyProfessionalAdjustments);
+  image.addEventListener("load", updateLabels);
 
   if (typeof ResizeObserver !== "undefined" && previewShell) {
     const observer = new ResizeObserver(() => resizePreview());
@@ -155,6 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", resizePreview);
   window.addEventListener("orientationchange", () => setTimeout(resizePreview, 150));
 
-  applyProfessionalAdjustments();
+  updateLabels();
   placePreview();
 });
