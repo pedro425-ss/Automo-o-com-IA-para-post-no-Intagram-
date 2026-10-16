@@ -330,6 +330,18 @@
       };
     }
 
+    function looksLikePropertyPhoto(src) {
+      const value = String(src || "");
+      if (!value) return false;
+
+      // Data URLs from the backend are usually actual downloaded photos.
+      if (value.startsWith("data:image/")) return true;
+
+      const lower = value.toLowerCase();
+      if (/(logo|banner|brand|marca|sprite|icon|favicon|placeholder)/i.test(lower)) return false;
+      return true;
+    }
+
     function buildSlides() {
       const base = getBaseData();
 
@@ -349,11 +361,14 @@
         safeListingImages[1] ||
         mainImage;
 
-      const thirdImage =
+      const thirdCandidate =
         manualImages[2] ||
         safeListingImages[2] ||
-        safeListingImages[1] ||
-        mainImage;
+        "";
+
+      const thirdImage = looksLikePropertyPhoto(thirdCandidate)
+        ? thirdCandidate
+        : (manualImages[1] || safeListingImages[1] || mainImage);
 
       return [
         {
