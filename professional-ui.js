@@ -488,7 +488,7 @@
         const chips=document.createElement("div");
         chips.id="mobile-step-chips";
         chips.className="mobile-step-chips";
-        chips.innerHTML=${STEPS.map((s,i)=>`<button type="button" class="mobile-step-chip" data-mobile-chip="${i+1}">${i+1}. ${s[1]}</button>`).join("")};
+        chips.innerHTML=STEPS.map((s,i)=>`<button type="button" class="mobile-step-chip" data-mobile-chip="${i+1}">${i+1}. ${s[1]}</button>`).join("");
         header.insertAdjacentElement("afterend",chips);
         chips.addEventListener("click",e=>{
           const b=e.target.closest("[data-mobile-chip]");
