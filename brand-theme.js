@@ -219,22 +219,24 @@
       return hslToRgb(hsl);
     })();
 
-    const dark = { r: 7, g: 10, b: 15 };
-    const dark2 = { r: 14, g: 18, b: 25 };
+    const neutralBg = { r: 9, g: 12, b: 17 };
+    const neutralPanel = { r: 16, g: 20, b: 27 };
+    const neutralSection = { r: 20, g: 25, b: 33 };
+    const neutralControl = { r: 13, g: 17, b: 23 };
 
-    let mode = "soft";
-    if (primaryHsl.s >= 0.52) mode = "vibrant";
-    else if (primaryHsl.s <= 0.16) mode = "elegant";
+    let mode = "equilibrado";
+    if (primaryHsl.s >= 0.58) mode = "marcante";
+    else if (primaryHsl.s <= 0.16) mode = "minimalista";
 
     return {
       primary,
       secondary,
       accent,
       highlight,
-      bg: mix(primaryRaw, dark, 0.70),
-      panel: mix(primaryRaw, dark2, 0.58),
-      section: mix(secondaryRaw, dark, 0.72),
-      control: mix(primaryRaw, { r: 30, g: 35, b: 45 }, 0.62),
+      bg: mix(primaryRaw, neutralBg, 0.94),
+      panel: mix(primaryRaw, neutralPanel, 0.96),
+      section: mix(secondaryRaw, neutralSection, 0.97),
+      control: mix(primaryRaw, neutralControl, 0.98),
       textOnPrimary: luminance(primary) > 0.46 ? "#101318" : "#ffffff",
       mode
     };
@@ -247,16 +249,15 @@
     style.textContent = `
       html[data-brand-theme="auto"] body{
         background:
-          linear-gradient(135deg,var(--brand-page-wash),transparent 48%),
-          radial-gradient(circle at 8% 0%,var(--brand-glow),transparent 38%),
-          radial-gradient(circle at 92% 18%,var(--brand-glow-2),transparent 34%),
-          var(--brand-bg) !important;
-        transition:background .45s ease;
+          radial-gradient(circle at 12% -8%,var(--brand-glow),transparent 30%),
+          radial-gradient(circle at 92% 8%,var(--brand-glow-2),transparent 24%),
+          #090c11 !important;
+        transition:background .35s ease;
       }
       html[data-brand-theme="auto"] .panel{
-        background:linear-gradient(165deg,var(--brand-panel),var(--brand-panel-2)) !important;
-        border:2px solid var(--brand-border-strong) !important;
-        box-shadow:0 24px 70px var(--brand-shadow),0 0 0 1px var(--brand-focus) inset !important;
+        background:linear-gradient(180deg,rgba(17,22,29,.97),rgba(12,16,22,.97)) !important;
+        border:1px solid var(--brand-border-soft) !important;
+        box-shadow:0 24px 70px rgba(0,0,0,.30) !important;
         position:relative !important;
         overflow:hidden !important;
       }
@@ -264,8 +265,9 @@
         content:"";
         position:absolute;
         inset:0 0 auto 0;
-        height:7px;
-        background:linear-gradient(90deg,var(--brand-primary),var(--brand-secondary),var(--brand-highlight));
+        height:3px;
+        background:linear-gradient(90deg,var(--brand-primary),var(--brand-secondary));
+        opacity:.88;
         z-index:20;
       }
       html[data-brand-theme="auto"] .section,
@@ -273,16 +275,16 @@
       html[data-brand-theme="auto"] .logo-library,
       html[data-brand-theme="auto"] .cloud-profile-box,
       html[data-brand-theme="auto"] .story-extra-control{
-        background:linear-gradient(145deg,var(--brand-section),var(--brand-section-2)) !important;
-        border-color:var(--brand-border-strong) !important;
-        box-shadow:0 8px 24px rgba(0,0,0,.12) !important;
+        background:rgba(255,255,255,.032) !important;
+        border-color:var(--brand-border-soft) !important;
+        box-shadow:none !important;
       }
       html[data-brand-theme="auto"] .panel-title{
-        color:var(--brand-highlight) !important;
-        text-shadow:0 0 24px var(--brand-glow);
+        color:#f8fafc !important;
+        text-shadow:none !important;
       }
       html[data-brand-theme="auto"] .panel-subtitle{
-        color:var(--brand-soft-text) !important;
+        color:#aeb8c6 !important;
         opacity:1 !important;
       }
       html[data-brand-theme="auto"] .section-title,
@@ -298,8 +300,8 @@
       html[data-brand-theme="auto"] .textarea,
       html[data-brand-theme="auto"] .select,
       html[data-brand-theme="auto"] .file{
-        background:var(--brand-control) !important;
-        border-color:var(--brand-border-soft) !important;
+        background:#0f141b !important;
+        border-color:rgba(255,255,255,.09) !important;
       }
       html[data-brand-theme="auto"] .input:focus,
       html[data-brand-theme="auto"] .textarea:focus,
@@ -318,10 +320,10 @@
       html[data-brand-theme="auto"] .btn-dark,
       html[data-brand-theme="auto"] .logo-library-save,
       html[data-brand-theme="auto"] .cloud-profile-btn.primary{
-        background:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary)) !important;
+        background:var(--brand-primary) !important;
         color:var(--brand-on-primary) !important;
-        border-color:var(--brand-border-strong) !important;
-        box-shadow:0 8px 24px var(--brand-button-shadow) !important;
+        border:1px solid rgba(255,255,255,.10) !important;
+        box-shadow:0 8px 22px var(--brand-button-shadow) !important;
       }
       html[data-brand-theme="auto"] .frame-preset,
       html[data-brand-theme="auto"] .story-extra-btn,
@@ -340,21 +342,12 @@
         border:2px solid var(--brand-border-strong) !important;
       }
       html[data-brand-theme="auto"] .instagram-story{
-        background:
-          radial-gradient(circle at 20% 10%,var(--brand-story-light),transparent 36%),
-          linear-gradient(160deg,var(--brand-story-dark) 0%,var(--brand-primary) 52%,var(--brand-secondary) 100%) !important;
-        box-shadow:0 0 0 4px var(--brand-border-strong) inset,0 24px 80px var(--brand-story-glow) !important;
+        background:#10151c !important;
+        box-shadow:0 0 0 2px var(--brand-border-soft) inset,0 24px 70px rgba(0,0,0,.34) !important;
       }
-      html[data-brand-style="vibrant"] .panel{border-radius:30px !important}
-      html[data-brand-style="vibrant"] .section{border-radius:20px !important}
-      html[data-brand-style="vibrant"] .btn{border-radius:18px !important}
-      html[data-brand-style="elegant"] .panel{border-radius:18px !important}
-      html[data-brand-style="elegant"] .section{border-radius:12px !important}
-      html[data-brand-style="elegant"] .btn{border-radius:10px !important}
-      html[data-brand-style="elegant"] .story-logo{border-radius:18px !important}
-      html[data-brand-style="soft"] .panel{border-radius:28px !important}
-      html[data-brand-style="soft"] .section{border-radius:20px !important}
-      html[data-brand-style="soft"] .btn{border-radius:15px !important}
+      html[data-brand-theme="auto"] .panel{border-radius:22px !important}
+      html[data-brand-theme="auto"] .section{border-radius:16px !important}
+      html[data-brand-theme="auto"] .btn{border-radius:12px !important}
 
       .auto-brand-box{margin-top:12px;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035)}
       .auto-brand-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -417,7 +410,7 @@
         : (message || "Aguardando logo");
     }
     if (mode && theme) {
-      const names = { vibrant: "Vibrante", elegant: "Elegante", soft: "Suave" };
+      const names = { marcante: "Marcante", minimalista: "Minimalista", equilibrado: "Equilibrado" };
       mode.textContent = `Estilo detectado: ${names[theme.mode] || theme.mode}. Paleta ativa: ${rgbToHex(theme.primary)}, ${rgbToHex(theme.secondary)} e ${rgbToHex(theme.highlight)}.`;
     }
     const swatches = [
@@ -444,18 +437,18 @@
       "--brand-bg": rgbToHex(theme.bg),
       "--brand-panel": rgbToHex(theme.panel),
       "--brand-panel-2": rgbToHex(mix(theme.secondary, theme.bg, 0.84)),
-      "--brand-section": rgba(theme.section, 0.90),
-      "--brand-section-2": rgba(mix(theme.primary, theme.bg, 0.58), 0.92),
+      "--brand-section": rgba(theme.section, 0.78),
+      "--brand-section-2": rgba(theme.section, 0.70),
       "--brand-control": rgba(theme.control, 0.92),
       "--brand-on-primary": theme.textOnPrimary,
-      "--brand-soft-text": rgbToHex(mix(theme.highlight, {r:255,g:255,b:255}, 0.32)),
-      "--brand-border": rgba(theme.accent, 0.38),
-      "--brand-border-soft": rgba(theme.accent, 0.30),
-      "--brand-border-strong": rgba(theme.accent, 0.70),
-      "--brand-focus": rgba(theme.accent, 0.28),
-      "--brand-glow": rgba(theme.primary, 0.34),
-      "--brand-glow-2": rgba(theme.secondary, 0.26),
-      "--brand-page-wash": rgba(theme.primary, 0.22),
+      "--brand-soft-text": "#b8c0cc",
+      "--brand-border": rgba(theme.accent, 0.20),
+      "--brand-border-soft": rgba(theme.accent, 0.18),
+      "--brand-border-strong": rgba(theme.accent, 0.46),
+      "--brand-focus": rgba(theme.accent, 0.20),
+      "--brand-glow": rgba(theme.primary, 0.14),
+      "--brand-glow-2": rgba(theme.secondary, 0.10),
+      "--brand-page-wash": rgba(theme.primary, 0.08),
       "--brand-shadow": "rgba(0,0,0,.28)",
       "--brand-button-shadow": rgba(theme.primary, 0.22),
       "--brand-story-glow": rgba(theme.accent, 0.42),
@@ -475,16 +468,18 @@
     const overlay = story?.querySelector(".story-overlay");
     const cta = story?.querySelector(".story-cta");
 
-    badge?.style.setProperty("background", rgbToHex(theme.primary), "important");
+    badge?.style.setProperty("background", rgba(theme.primary, 0.92), "important");
     badge?.style.setProperty("color", theme.textOnPrimary, "important");
+    badge?.style.setProperty("box-shadow", `0 8px 26px ${rgba(theme.primary,.20)}`, "important");
     price?.style.setProperty("color", rgbToHex(theme.highlight), "important");
     overlay?.style.setProperty(
       "background",
-      `linear-gradient(180deg,${rgba(theme.primary,.05)} 0%,rgba(0,0,0,.43) 52%,${rgba(theme.bg,.94)} 100%)`,
+      `linear-gradient(180deg,rgba(0,0,0,.04) 0%,rgba(0,0,0,.26) 46%,rgba(6,9,13,.84) 78%,rgba(5,8,12,.96) 100%)`,
       "important"
     );
-    cta?.style.setProperty("background", rgba(theme.primary, 0.23), "important");
-    cta?.style.setProperty("border-color", rgba(theme.accent, 0.38), "important");
+    cta?.style.setProperty("background", "rgba(10,14,20,.76)", "important");
+    cta?.style.setProperty("border-color", rgba(theme.accent, 0.34), "important");
+    cta?.style.setProperty("box-shadow", `inset 4px 0 0 ${rgbToHex(theme.primary)}`, "important");
 
     try {
       if (typeof window.invalidateStoryCache === "function") window.invalidateStoryCache();
@@ -513,6 +508,9 @@
     overlay?.style.removeProperty("background");
     cta?.style.removeProperty("background");
     cta?.style.removeProperty("border-color");
+    cta?.style.removeProperty("box-shadow");
+    const badge = $("story-badge");
+    badge?.style.removeProperty("box-shadow");
 
     const activeTemplate = document.querySelector(".story-template-button.is-active");
     if (activeTemplate) setTimeout(() => activeTemplate.click(), 0);
