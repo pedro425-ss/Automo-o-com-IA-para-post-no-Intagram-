@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (storyArea) storyArea.textContent = areaInput?.value || "Área";
     if (storyDescription) storyDescription.textContent = descInput?.value || "Descrição";
-    if (storyContact) storyContact.textContent = contactInput?.value || "@assessoriaimobiliaria";
+    if (storyContact) storyContact.textContent = contactInput?.value || "@suaimobiliaria";
 
     if (storyFeatures) {
       const selected = [...featureInputs]
