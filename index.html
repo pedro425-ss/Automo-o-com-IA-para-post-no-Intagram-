@@ -2,23 +2,100 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gerador de Story - Villela Imóveis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Automação com IA para Posts Imobiliários</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/dom-to-image-more@2.8.0/dist/dom-to-image-more.min.js"></script>
 
   <link rel="stylesheet" href="./Style.css" />
+
+  <style>
+    .adjustment-panel{display:flex;flex-direction:column;gap:14px}
+    .adjustment-grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .adjust-control,.framing-block{padding:14px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+    .adjust-control-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .adjust-control-title,.framing-title{font-size:13px;font-weight:800;color:#f8d78c}
+    .adjust-value{flex:0 0 auto;min-width:58px;padding:5px 10px;border-radius:999px;background:rgba(200,139,58,.18);border:1px solid rgba(200,139,58,.35);color:#f8d78c;font-size:12px;font-weight:900;text-align:center}
+    .adjust-range{display:block;width:100%;margin:0;-webkit-appearance:none;appearance:none;background:transparent;height:32px;cursor:pointer}
+    .adjust-range::-webkit-slider-runnable-track{height:7px;border-radius:999px;background:rgba(255,255,255,.18)}
+    .adjust-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:25px;height:25px;margin-top:-9px;border-radius:50%;border:3px solid #f8d78c;background:#c88b3a;box-shadow:0 3px 12px rgba(0,0,0,.35)}
+    .adjust-range::-moz-range-track{height:7px;border-radius:999px;background:rgba(255,255,255,.18)}
+    .adjust-range::-moz-range-thumb{width:23px;height:23px;border-radius:50%;border:3px solid #f8d78c;background:#c88b3a}
+    .adjust-range-scale{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:2px;font-size:11px;line-height:1.2;opacity:.7}
+    .adjust-range-scale span:nth-child(2){text-align:center}
+    .adjust-range-scale span:last-child{text-align:right}
+    .adjust-hint{margin-top:8px;font-size:12px;line-height:1.4;opacity:.68}
+    .framing-title{margin-bottom:10px}
+    .framing-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .frame-preset{min-height:44px;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 8px;background:rgba(75,79,42,.55);color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+    .frame-preset:active,.frame-preset:focus-visible{background:rgba(200,139,58,.32);border-color:rgba(200,139,58,.65);outline:none}
+    .adjust-actions{display:flex}
+    .btn-reset-adjustments{width:100%;min-height:46px;border:1px solid rgba(200,139,58,.35);border-radius:14px;padding:11px 14px;background:rgba(200,139,58,.10);color:#f8d78c;font-size:12px;font-weight:900;cursor:pointer}
+    #mobile-preview-mount{display:none}
+    .story-preview-shell{width:360px;height:640px;overflow:hidden;border-radius:32px;background:#15160d;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+    .story-preview-stage{width:1080px;height:1920px;transform:scale(.3333333333);transform-origin:top left}
+    #story-image-preview{will-change:transform,object-position;transition:transform .08s linear,object-position .08s linear}
+
+    @media (min-width:900px){
+      .adjustment-grid{grid-template-columns:1fr 1fr}
+    }
+
+    @media (max-width:899px){
+      html,body{max-width:100%;overflow-x:hidden}
+      body{padding:8px !important;padding-left:max(8px,env(safe-area-inset-left)) !important;padding-right:max(8px,env(safe-area-inset-right)) !important}
+      .max-w-6xl{width:100%;gap:12px !important}
+      .panel{width:100%;padding:10px !important;border-radius:16px !important}
+      .section{width:100%;padding:12px !important;border-radius:15px !important;margin-top:10px !important}
+      .section-title{font-size:12px !important;line-height:1.3;margin-bottom:12px !important}
+      .panel-title{font-size:20px !important}
+      .panel-subtitle{font-size:12px !important;line-height:1.35}
+      .field{gap:6px !important}
+      .label{font-size:13px !important;line-height:1.25}
+      .input,.textarea,.select,.file{width:100% !important;min-height:48px !important;font-size:16px !important;border-radius:13px !important}
+      .textarea{min-height:96px !important}
+      .btn{min-height:50px !important;font-size:14px !important}
+      .grid-2{gap:10px !important}
+      .check{min-height:46px;padding:10px 12px !important;font-size:14px}
+
+      #mobile-preview-mount{display:flex;justify-content:center;align-items:center;width:100%;margin:0 0 14px;padding:10px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08)}
+      #desktop-preview-mount{display:none !important}
+      .story-preview-shell{width:min(100%,240px) !important;height:auto !important;aspect-ratio:9/16;border-radius:18px !important}
+
+      .adjustment-panel{gap:12px !important}
+      .adjustment-grid{grid-template-columns:1fr !important;gap:10px !important}
+      .adjust-control,.framing-block{padding:12px !important;border-radius:14px !important}
+      .adjust-control-head{margin-bottom:7px !important}
+      .adjust-control-title,.framing-title{font-size:14px !important;line-height:1.25}
+      .adjust-value{min-width:60px !important;padding:6px 10px !important;font-size:13px !important}
+      .adjust-range{width:100% !important;height:38px !important;margin:0 !important}
+      .adjust-range::-webkit-slider-runnable-track{height:8px}
+      .adjust-range::-webkit-slider-thumb{width:29px;height:29px;margin-top:-10.5px}
+      .adjust-range-scale{display:flex !important;width:100% !important;justify-content:space-between !important;gap:8px !important;margin-top:1px !important;font-size:11px !important;white-space:nowrap}
+      .adjust-hint{font-size:11px !important;line-height:1.35 !important;margin-top:7px !important}
+      .framing-presets{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px !important}
+      .frame-preset{display:flex !important;align-items:center !important;justify-content:center !important;min-height:48px !important;padding:10px !important;border-radius:12px !important;font-size:13px !important;line-height:1.1 !important;text-align:center !important}
+      .btn-reset-adjustments{min-height:50px !important;font-size:13px !important;padding:11px 12px !important}
+    }
+
+    @media (max-width:380px){
+      body{padding:6px !important}
+      .panel{padding:7px !important}
+      .section{padding:10px !important}
+      .story-preview-shell{width:min(100%,215px) !important}
+      .framing-presets{grid-template-columns:1fr 1fr !important}
+    }
+  </style>
 </head>
 
-<body class="bg-slate-950 text-white min-h-screen p-6">
+<body class="bg-stone-950 text-white min-h-screen p-6">
   <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
 
     <div class="panel">
       <div class="panel-header">
         <div>
           <h1 class="panel-title">Gerador de Stories</h1>
-          <p class="panel-subtitle">Preencha os dados e gere o story em 1080×1920.</p>
+          <p class="panel-subtitle">Assessoria Imobiliária • Sítios, casas, terrenos e áreas</p>
         </div>
       </div>
 
@@ -26,182 +103,160 @@
         <div class="section-title">Tipo do anúncio</div>
         <div class="field">
           <label class="label" for="badge">Selo</label>
-          <input id="badge" class="input" placeholder="Ex: GALPÃO PARA ALUGAR" value="IMÓVEL À VENDA" />
-          <div class="hint">Esse texto aparece no selo laranja.</div>
+          <input id="badge" class="input" placeholder="Ex: SÍTIO À VENDA" value="IMÓVEL À VENDA" />
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">Dados do imóvel</div>
-
         <div class="grid-2">
-          <div class="field">
-            <label class="label" for="title">Título</label>
-            <input id="title" class="input" placeholder="Ex: Casa com 2 dormitórios" />
-          </div>
-
-          <div class="field">
-            <label class="label" for="price">Preço</label>
-            <input id="price" class="input" placeholder="Ex: R$ 350.000" />
-          </div>
+          <div class="field"><label class="label" for="title">Título</label><input id="title" class="input" placeholder="Ex: Sítio com casa sede" /></div>
+          <div class="field"><label class="label" for="price">Preço</label><input id="price" class="input" placeholder="Ex: R$ 650.000" /></div>
         </div>
-
         <div class="grid-2">
-          <div class="field">
-            <label class="label" for="city">Cidade</label>
-            <input id="city" class="input" placeholder="Ex: Itaquaquecetuba" />
-          </div>
-
-          <div class="field">
-            <label class="label" for="district">Bairro</label>
-            <input id="district" class="input" placeholder="Ex: Centro" />
-          </div>
+          <div class="field"><label class="label" for="city">Cidade</label><input id="city" class="input" placeholder="Ex: Mogi das Cruzes" /></div>
+          <div class="field"><label class="label" for="district">Bairro / Região</label><input id="district" class="input" placeholder="Ex: Pedra Grande" /></div>
         </div>
-
         <div class="grid-2">
-          <div class="field">
-            <label class="label" for="area">Área (m²)</label>
-            <input id="area" class="input" placeholder="Ex: 80" />
-          </div>
-
-          <div class="field">
-            <label class="label" for="contact">Contato (Instagram / WhatsApp)</label>
-            <input id="contact" class="input" placeholder="Ex: @villelaimoveis / (11) 99999-9999" />
-          </div>
+          <div class="field"><label class="label" for="area">Área</label><input id="area" class="input" placeholder="Ex: 20.000 m² ou 2 alqueires" /></div>
+          <div class="field"><label class="label" for="contact">Contato</label><input id="contact" class="input" placeholder="Ex: @assessoriaimobiliaria / WhatsApp" /></div>
         </div>
+        <div class="field"><label class="label" for="description">Descrição</label><textarea id="description" class="textarea" placeholder="Ex: Casa sede, área verde, fácil acesso e excelente localização."></textarea><div class="hint">Dica: use uma descrição curta para ficar bonito no story.</div></div>
+      </div>
 
-        <div class="field">
-          <label class="label" for="description">Descrição</label>
-          <textarea id="description" class="textarea" placeholder="Ex: 2 dormitórios, 1 vaga, ótima localização."></textarea>
-          <div class="hint">Dica: 1 a 2 linhas funciona melhor em story.</div>
+      <div class="section">
+        <div class="section-title">Diferenciais</div>
+        <div class="grid-2">
+          <label class="check"><input type="checkbox" class="feature" value="Casa sede"> Casa sede</label>
+          <label class="check"><input type="checkbox" class="feature" value="Lago"> Lago</label>
+          <label class="check"><input type="checkbox" class="feature" value="Nascente"> Nascente</label>
+          <label class="check"><input type="checkbox" class="feature" value="Área verde"> Área verde</label>
+          <label class="check"><input type="checkbox" class="feature" value="Fácil acesso"> Fácil acesso</label>
+          <label class="check"><input type="checkbox" class="feature" value="Documentação OK"> Documentação OK</label>
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">Imagens</div>
         <div class="grid-2">
-          <div class="field">
-            <label class="label" for="image-upload-story">Imagem do imóvel</label>
-            <input id="image-upload-story" type="file" accept="image/*" class="file" />
-          </div>
-
-          <div class="field">
-            <label class="label" for="logo-upload-story">Logo</label>
-            <input id="logo-upload-story" type="file" accept="image/*" class="file" />
-          </div>
+          <div class="field"><label class="label" for="image-upload-story">Imagem do imóvel</label><input id="image-upload-story" type="file" accept="image/*" class="file" /></div>
+          <div class="field"><label class="label" for="logo-upload-story">Logo</label><input id="logo-upload-story" type="file" accept="image/*" class="file" /></div>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Ajuste da foto</div>
-
-        <div class="grid-2">
-          <div class="field">
-            <label class="label" for="image-fit">Modo</label>
-            <select id="image-fit" class="select">
-              <option value="cover" selected>Cortar (preenche)</option>
-              <option value="contain">Encaixar (sem corte)</option>
-            </select>
+      <div class="section" id="adjustment-section">
+        <div class="section-title">Ajuste profissional da foto</div>
+        <div id="mobile-preview-mount"></div>
+        <div class="adjustment-panel">
+          <div class="adjustment-grid">
+            <div class="field"><label class="label" for="image-fit">Enquadramento</label><select id="image-fit" class="select"><option value="cover" selected>Preencher o Story</option><option value="contain">Mostrar a foto inteira</option></select></div>
+            <div class="field"><label class="label" for="contain-bg">Fundo ao mostrar inteira</label><select id="contain-bg" class="select"><option value="true" selected>Fundo desfocado</option><option value="false">Fundo limpo</option></select></div>
           </div>
 
-          <div class="field">
-            <label class="label" for="contain-bg">Fundo (modo encaixar)</label>
-            <select id="contain-bg" class="select">
-              <option value="true" selected>Blur ligado</option>
-              <option value="false">Blur desligado</option>
-            </select>
+          <div class="adjust-control">
+            <div class="adjust-control-head"><label class="adjust-control-title" for="zoom">Zoom</label><span id="zoom-value" class="adjust-value">100%</span></div>
+            <input id="zoom" class="adjust-range" type="range" min="100" max="180" step="1" value="100" />
+            <div class="adjust-range-scale"><span>100%</span><span>140%</span><span>180%</span></div>
+            <div class="adjust-hint">Aproxime a foto sem perder o controle do enquadramento.</div>
           </div>
-        </div>
 
-        <div class="field">
-          <label class="label" for="pos-x">Posição Horizontal</label>
-          <input id="pos-x" type="range" min="0" max="100" value="50" class="range" />
-        </div>
+          <div class="adjust-control">
+            <div class="adjust-control-head"><label class="adjust-control-title" for="pos-x">Posição horizontal</label><span id="pos-x-value" class="adjust-value">50%</span></div>
+            <input id="pos-x" class="adjust-range" type="range" min="0" max="100" value="50" />
+            <div class="adjust-range-scale"><span>Esquerda</span><span>Centro</span><span>Direita</span></div>
+          </div>
 
-        <div class="field">
-          <label class="label" for="pos-y">Posição Vertical</label>
-          <input id="pos-y" type="range" min="0" max="100" value="50" class="range" />
+          <div class="adjust-control">
+            <div class="adjust-control-head"><label class="adjust-control-title" for="pos-y">Posição vertical</label><span id="pos-y-value" class="adjust-value">50%</span></div>
+            <input id="pos-y" class="adjust-range" type="range" min="0" max="100" value="50" />
+            <div class="adjust-range-scale"><span>Topo</span><span>Centro</span><span>Base</span></div>
+          </div>
+
+          <div class="framing-block">
+            <div class="framing-title">Enquadramento rápido</div>
+            <div class="framing-presets">
+              <button type="button" class="frame-preset" data-x="50" data-y="18">Topo</button>
+              <button type="button" class="frame-preset" data-x="20" data-y="50">Esquerda</button>
+              <button type="button" class="frame-preset" data-x="50" data-y="50">Centro</button>
+              <button type="button" class="frame-preset" data-x="80" data-y="50">Direita</button>
+              <button type="button" class="frame-preset" data-x="50" data-y="82">Base</button>
+            </div>
+            <div class="adjust-hint">Use um preset e depois faça o ajuste fino pelos controles acima.</div>
+          </div>
+          <div class="adjust-actions"><button id="reset-adjustments" type="button" class="btn-reset-adjustments">Restaurar enquadramento original</button></div>
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">Buscar imagem por URL</div>
-
-        <div class="field">
-          <label class="label" for="imovel-url">URL do anúncio</label>
-          <input id="imovel-url" class="input" placeholder="Cole aqui o link do imóvel" />
-          <div class="hint">O backend pega a imagem do anúncio e joga no story.</div>
-        </div>
-
-        <div class="grid-2">
-          <button id="buscar-imagem-ia" class="btn btn-green" type="button">Buscar imagem</button>
-          <button id="download-story" class="btn btn-orange" type="button">Baixar PNG</button>
-        </div>
-
-        <div style="margin-top:12px">
-          <button id="post-story" class="btn btn-blue" type="button">Postar no Story</button>
-          <div class="hint" style="margin-top:8px">
-            No celular abre o compartilhar. No PC baixa a imagem e abre o Instagram.
-          </div>
-        </div>
+        <div class="field"><label class="label" for="imovel-url">URL do anúncio</label><input id="imovel-url" class="input" placeholder="Cole aqui o link do imóvel" /></div>
+        <div class="grid-2"><button id="buscar-imagem-ia" class="btn btn-green" type="button">Buscar imagem</button><button id="download-story" class="btn btn-gold" type="button">Baixar PNG</button></div>
+        <div style="margin-top:12px"><button id="post-story" class="btn btn-dark" type="button">Postar no Story</button></div>
       </div>
     </div>
 
-    <div class="flex items-center justify-center">
-      <div style="width:360px;height:640px;overflow:hidden;border-radius:32px">
-        <div style="transform:scale(0.333333);transform-origin:top left">
-          <div id="story-preview-wrapper" class="instagram-story shadow-2xl">
-            <div id="story-bg-blur" class="story-bg-blur hidden"></div>
-
-            <img
-              id="story-image-preview"
-              src=""
-              class="hidden"
-              crossorigin="anonymous"
-              alt="Imagem do imóvel"
-            />
-
-            <div class="story-overlay"></div>
-
-            <div class="story-logo">
-              <img
-                id="story-logo-preview"
-                src=""
-                class="h-full w-full hidden"
-                crossorigin="anonymous"
-                alt="Logo da imobiliária"
-              />
-            </div>
-
-            <div class="story-content">
-              <div id="story-badge" class="story-badge">IMÓVEL À VENDA</div>
-              <h2 id="story-title" class="story-title">Título do imóvel</h2>
-              <p id="story-price" class="story-price">R$ 0,00</p>
-
-              <div class="story-meta">
-                <span id="story-location">Bairro - Cidade</span>
-                <span id="story-area">Área</span>
-              </div>
-
-              <p id="story-description" class="story-description">Descrição</p>
-
-              <div class="story-cta">
-                <div class="story-cta-title">Chama no Direct</div>
-                <div id="story-contact" class="story-contact">@seuinstagram</div>
-              </div>
-            </div>
-
-            <div class="story-footer">
-              <span>Villela Imóveis</span>
-              <span>✨ Seu novo lar está aqui</span>
-            </div>
+    <div id="desktop-preview-mount" class="flex items-center justify-center">
+      <div class="story-preview-shell"><div class="story-preview-stage">
+        <div id="story-preview-wrapper" class="instagram-story shadow-2xl">
+          <div id="story-bg-blur" class="story-bg-blur hidden"></div>
+          <img id="story-image-preview" src="" class="hidden" crossorigin="anonymous" alt="Imagem do imóvel" />
+          <div class="story-overlay"></div>
+          <div id="story-logo-wrapper" class="story-logo hidden"><img id="story-logo-preview" src="" class="h-full w-full hidden" crossorigin="anonymous" alt="Logo" /></div>
+          <div class="story-content">
+            <div id="story-badge" class="story-badge">IMÓVEL À VENDA</div>
+            <h2 id="story-title" class="story-title">Título do imóvel</h2>
+            <p id="story-price" class="story-price">R$ 0,00</p>
+            <div class="story-meta"><span id="story-location">Região - Cidade</span><span id="story-area">Área</span></div>
+            <p id="story-description" class="story-description">Descrição do imóvel</p>
+            <div id="story-features" class="story-features"></div>
+            <div class="story-cta"><div class="story-cta-title">Fale conosco</div><div id="story-contact" class="story-contact">@assessoriaimobiliaria</div></div>
           </div>
+          <div class="story-footer"><span>Assessoria Imobiliária</span><span>🌿 Sítios, casas, terrenos e áreas</span></div>
         </div>
-      </div>
+      </div></div>
     </div>
-
   </div>
 
   <script src="./script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const image = document.getElementById("story-image-preview");
+      const story = document.getElementById("story-preview-wrapper");
+      const imageFit = document.getElementById("image-fit");
+      const containBg = document.getElementById("contain-bg");
+      const posX = document.getElementById("pos-x");
+      const posY = document.getElementById("pos-y");
+      const zoom = document.getElementById("zoom");
+      const zoomValue = document.getElementById("zoom-value");
+      const posXValue = document.getElementById("pos-x-value");
+      const posYValue = document.getElementById("pos-y-value");
+      const resetButton = document.getElementById("reset-adjustments");
+      const presetButtons = document.querySelectorAll(".frame-preset");
+      const mobileMount = document.getElementById("mobile-preview-mount");
+      const desktopMount = document.getElementById("desktop-preview-mount");
+      const previewShell = document.querySelector(".story-preview-shell");
+      const previewStage = document.querySelector(".story-preview-stage");
+      if (!image || !story || !posX || !posY || !zoom || !mobileMount || !desktopMount || !previewShell || !previewStage) return;
+      const mobileQuery = window.matchMedia("(max-width: 899px)");
+
+      function invalidate(){ if (typeof invalidateStoryCache === "function") invalidateStoryCache(); }
+      function updateLabels(){ if(zoomValue)zoomValue.textContent=`${zoom.value}%`; if(posXValue)posXValue.textContent=`${posX.value}%`; if(posYValue)posYValue.textContent=`${posY.value}%`; }
+      function applyZoom(){ const scale=Number(zoom.value||100)/100; image.style.transformOrigin=`${posX.value}% ${posY.value}%`; image.style.transform=`scale(${scale})`; updateLabels(); invalidate(); }
+      function resizePreview(){
+        if(mobileQuery.matches){ const width=previewShell.clientWidth||Math.min(window.innerWidth-40,240); const scale=width/1080; previewStage.style.setProperty("transform",`scale(${scale})`,"important"); previewStage.style.transformOrigin="top left"; previewShell.style.setProperty("height",`${1920*scale}px`,"important"); }
+        else { previewShell.style.setProperty("width","360px","important"); previewShell.style.setProperty("height","640px","important"); previewStage.style.setProperty("transform","scale(0.3333333333)","important"); previewStage.style.transformOrigin="top left"; }
+      }
+      function placePreview(){ if(mobileQuery.matches){ if(previewShell.parentElement!==mobileMount)mobileMount.appendChild(previewShell); } else if(previewShell.parentElement!==desktopMount)desktopMount.appendChild(previewShell); requestAnimationFrame(resizePreview); }
+
+      zoom.addEventListener("input",applyZoom); zoom.addEventListener("change",applyZoom);
+      [posX,posY].forEach(control=>{ control.addEventListener("input",()=>{updateLabels();image.style.transformOrigin=`${posX.value}% ${posY.value}%`;}); control.addEventListener("change",updateLabels); });
+      presetButtons.forEach(button=>button.addEventListener("click",()=>{ posX.value=button.dataset.x||"50"; posY.value=button.dataset.y||"50"; posX.dispatchEvent(new Event("input",{bubbles:true})); posY.dispatchEvent(new Event("input",{bubbles:true})); applyZoom(); }));
+      resetButton?.addEventListener("click",()=>{ if(imageFit)imageFit.value="cover"; if(containBg)containBg.value="true"; zoom.value="100"; posX.value="50"; posY.value="50"; imageFit?.dispatchEvent(new Event("change",{bubbles:true})); containBg?.dispatchEvent(new Event("change",{bubbles:true})); posX.dispatchEvent(new Event("input",{bubbles:true})); posY.dispatchEvent(new Event("input",{bubbles:true})); applyZoom(); });
+      image.addEventListener("load",applyZoom);
+      window.addEventListener("resize",()=>requestAnimationFrame(()=>{placePreview();resizePreview();}));
+      mobileQuery.addEventListener?.("change",placePreview);
+      updateLabels(); placePreview(); applyZoom(); setTimeout(resizePreview,50);
+    });
+  </script>
 </body>
 </html>
