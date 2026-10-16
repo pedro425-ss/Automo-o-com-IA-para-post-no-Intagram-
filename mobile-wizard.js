@@ -49,6 +49,58 @@
           padding:8px!important;
           border-radius:12px!important;
         }
+
+        body.mobile-wizard-active .workflow-panel,
+        body.mobile-wizard-active .property-panel{
+          display:none!important;
+        }
+        body.mobile-wizard-active.mobile-secondary-open .workflow-panel,
+        body.mobile-wizard-active.mobile-secondary-open .property-panel{
+          display:block!important;
+        }
+        #mobile-secondary-toggle{
+          display:none;
+        }
+        body.mobile-wizard-active #mobile-secondary-toggle{
+          display:flex;
+          width:100%;
+          min-height:40px;
+          margin:5px 0 7px;
+          padding:7px 10px;
+          align-items:center;
+          justify-content:space-between;
+          gap:8px;
+          border:1px solid rgba(255,255,255,.09);
+          border-radius:11px;
+          background:rgba(255,255,255,.045);
+          color:#f8d78c;
+          font-size:11px;
+          font-weight:900;
+        }
+        body.mobile-wizard-active #mobile-secondary-toggle span:last-child{
+          font-size:14px;
+          transition:transform .18s ease;
+        }
+        body.mobile-wizard-active.mobile-secondary-open #mobile-secondary-toggle span:last-child{
+          transform:rotate(180deg);
+        }
+        body.mobile-wizard-active.mobile-secondary-open .workflow-panel,
+        body.mobile-wizard-active.mobile-secondary-open .property-panel{
+          margin-top:6px!important;
+          padding:9px!important;
+          border-radius:12px!important;
+        }
+        body.mobile-wizard-active.mobile-secondary-open .workflow-title,
+        body.mobile-wizard-active.mobile-secondary-open .property-title{
+          font-size:11px!important;
+        }
+        body.mobile-wizard-active.mobile-secondary-open .workflow-subtitle,
+        body.mobile-wizard-active.mobile-secondary-open .property-subtitle,
+        body.mobile-wizard-active.mobile-secondary-open .workflow-status,
+        body.mobile-wizard-active.mobile-secondary-open .property-status{
+          font-size:9px!important;
+          line-height:1.25!important;
+        }
         body.mobile-wizard-active .section-title{
           font-size:11px!important;
           line-height:1.15!important;
@@ -191,6 +243,26 @@
     else panel.prepend(progress);
   }
 
+  function createSecondaryToggle(panel) {
+    if (document.getElementById("mobile-secondary-toggle")) return;
+
+    const button = document.createElement("button");
+    button.id = "mobile-secondary-toggle";
+    button.type = "button";
+    button.innerHTML = `
+      <span>Rascunhos e imóveis salvos</span>
+      <span>⌄</span>
+    `;
+
+    const progress = document.getElementById("mobile-wizard-progress");
+    if (progress?.nextSibling) panel.insertBefore(button, progress.nextSibling);
+    else panel.prepend(button);
+
+    button.addEventListener("click", () => {
+      document.body.classList.toggle("mobile-secondary-open");
+    });
+  }
+
   function createFinalActions(panel) {
     if (document.getElementById("mobile-final-actions")) return;
     const host = document.createElement("div");
@@ -294,6 +366,11 @@
     if (fill) fill.style.width = `${currentStep * 25}%`;
     if (back) back.disabled = currentStep === 1;
     if (next) next.style.display = currentStep === 4 ? "none" : "";
+
+    const secondaryToggle = document.getElementById("mobile-secondary-toggle");
+    if (secondaryToggle) secondaryToggle.style.display = currentStep === 1 ? "" : "none";
+    if (currentStep !== 1) document.body.classList.remove("mobile-secondary-open");
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -311,6 +388,7 @@
       injectStyles();
       classifySections();
       createProgress(panel);
+      createSecondaryToggle(panel);
       createFinalActions(panel);
       createPreviewModal();
       createBottomBar();
