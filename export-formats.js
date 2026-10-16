@@ -1,9 +1,9 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const FORMAT_CONFIG = {
-    story: { width: 1080, height: 1920, label: "Story", file: "story-assessoria-imobiliaria-1080x1920.png" },
-    feed: { width: 1080, height: 1350, label: "Feed", file: "feed-assessoria-imobiliaria-1080x1350.png" },
-    square: { width: 1080, height: 1080, label: "Quadrado", file: "post-assessoria-imobiliaria-1080x1080.png" },
+    story: { width: 1080, height: 1920, label: "Story", file: "story-imobiliaria-1080x1920.png" },
+    feed: { width: 1080, height: 1350, label: "Feed", file: "feed-imobiliaria-1080x1350.png" },
+    square: { width: 1080, height: 1080, label: "Quadrado", file: "post-imobiliaria-1080x1080.png" },
   };
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -34,6 +34,39 @@
       }
       .export-package-btn:disabled{opacity:.55;cursor:wait}
       .export-formats-status{min-height:17px;margin-top:8px;font-size:11px;line-height:1.35;opacity:.7}
+
+      .preview-format-switch{
+        width:360px;display:grid;grid-template-columns:1fr 1fr;gap:6px;
+        margin:0 auto 10px;padding:5px;border-radius:14px;
+        border:1px solid rgba(255,255,255,.09);background:rgba(12,16,22,.86);
+        box-shadow:0 12px 28px rgba(0,0,0,.18);
+      }
+      .preview-format-switch button{
+        min-height:38px;border:0;border-radius:10px;background:transparent;color:#b8c0cc;
+        font-size:12px;font-weight:900;cursor:pointer;
+      }
+      .preview-format-switch button.is-active{
+        background:var(--brand-primary,#c88b3a);color:var(--brand-on-primary,#fff);
+      }
+      .feed-preview-shell{
+        display:none;width:360px;height:450px;position:relative;overflow:hidden;
+        border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.32);
+      }
+      .feed-preview-stage{
+        width:1080px;height:1350px;position:absolute;left:0;top:0;
+        transform:scale(.3333333333);transform-origin:top left;
+      }
+      .feed-preview-canvas{
+        width:1080px!important;height:1350px!important;min-width:1080px!important;min-height:1350px!important;
+        max-width:none!important;border-radius:0!important;clip-path:none!important;
+        position:relative!important;overflow:hidden!important;transform:none!important;margin:0!important;
+      }
+      @media(min-width:1024px){
+        #desktop-preview-mount{
+          flex-direction:column!important;
+          justify-content:flex-start!important;
+        }
+      }
       @media(max-width:899px){
         .export-formats-box{padding:12px}
         .export-formats-grid{grid-template-columns:1fr 1fr}
@@ -141,6 +174,150 @@
     targetImage.style.setProperty("object-position", "center", "important");
     targetImage.style.setProperty("transform", "none", "important");
     targetImage.style.setProperty("transform-origin", "center", "important");
+  }
+
+  function stripPreviewIds(root) {
+    root.querySelectorAll("[id]").forEach((el) => {
+      el.id = "feed-preview-" + el.id;
+    });
+  }
+
+  function applyFeedLayout(clone) {
+    clone.classList.add("feed-preview-canvas");
+    clone.style.setProperty("width", "1080px", "important");
+    clone.style.setProperty("height", "1350px", "important");
+    clone.style.setProperty("min-width", "1080px", "important");
+    clone.style.setProperty("min-height", "1350px", "important");
+    clone.style.setProperty("background", "#0b1016", "important");
+
+    const image = clone.querySelector(".instagram-story > img, #story-image-preview") || clone.querySelector('img[alt="Imagem do imóvel"]');
+    const blur = clone.querySelector(".story-bg-blur");
+    let photoWindow = clone.querySelector(".feed-photo-window");
+    if (!photoWindow) {
+      photoWindow = document.createElement("div");
+      photoWindow.className = "feed-photo-window";
+      photoWindow.style.cssText = "position:absolute;inset:0 0 auto 0;width:1080px;height:875px;overflow:hidden;background:#111820;";
+      if (blur) photoWindow.appendChild(blur);
+      if (image) photoWindow.appendChild(image);
+      clone.insertBefore(photoWindow, clone.firstChild);
+    }
+
+    if (image) {
+      applyImageFrame(image, 875);
+      image.style.setProperty("z-index", "1", "important");
+    }
+    if (blur) {
+      blur.style.setProperty("z-index", "0", "important");
+      blur.style.setProperty("height", "875px", "important");
+    }
+
+    const overlay = clone.querySelector(".story-overlay");
+    if (overlay) {
+      overlay.style.setProperty(
+        "background",
+        "linear-gradient(180deg,rgba(0,0,0,.02) 0%,rgba(0,0,0,.05) 48%,rgba(7,10,14,.55) 63%,rgba(7,10,14,.98) 78%,rgba(7,10,14,1) 100%)",
+        "important"
+      );
+      overlay.style.setProperty("z-index", "1", "important");
+    }
+
+    const logo = clone.querySelector(".story-logo");
+    if (logo) {
+      logo.style.setProperty("width", "118px", "important");
+      logo.style.setProperty("height", "118px", "important");
+      logo.style.setProperty("top", "34px", "important");
+      logo.style.setProperty("left", "36px", "important");
+      logo.style.setProperty("right", "auto", "important");
+      logo.style.setProperty("transform", "none", "important");
+      logo.style.setProperty("padding", "8px", "important");
+      logo.style.setProperty("border-radius", "22px", "important");
+      logo.style.setProperty("z-index", "4", "important");
+    }
+
+    const badge = clone.querySelector(".story-badge");
+    if (badge) {
+      clone.appendChild(badge);
+      badge.style.setProperty("position", "absolute", "important");
+      badge.style.setProperty("top", "42px", "important");
+      badge.style.setProperty("right", "42px", "important");
+      badge.style.setProperty("left", "auto", "important");
+      badge.style.setProperty("margin", "0", "important");
+      badge.style.setProperty("font-size", "23px", "important");
+      badge.style.setProperty("padding", "11px 20px", "important");
+      badge.style.setProperty("z-index", "4", "important");
+    }
+
+    const content = clone.querySelector(".story-content");
+    if (content) {
+      content.style.setProperty("left", "46px", "important");
+      content.style.setProperty("right", "46px", "important");
+      content.style.setProperty("bottom", "42px", "important");
+      content.style.setProperty("width", "auto", "important");
+      content.style.setProperty("padding", "30px 32px 28px", "important");
+      content.style.setProperty("border-radius", "30px", "important");
+      content.style.setProperty("background", "rgba(8,12,17,.90)", "important");
+      content.style.setProperty("border", "1px solid rgba(255,255,255,.10)", "important");
+      content.style.setProperty("box-shadow", "0 20px 60px rgba(0,0,0,.30)", "important");
+      content.style.setProperty("transform", "none", "important");
+      content.style.setProperty("z-index", "3", "important");
+    }
+
+    const title = clone.querySelector(".story-title");
+    if (title) {
+      title.style.setProperty("font-size", "52px", "important");
+      title.style.setProperty("line-height", "1.04", "important");
+      title.style.setProperty("margin-bottom", "12px", "important");
+      title.style.setProperty("max-height", "110px", "important");
+      title.style.setProperty("overflow", "hidden", "important");
+    }
+
+    const price = clone.querySelector(".story-price");
+    if (price) {
+      price.style.setProperty("font-size", "48px", "important");
+      price.style.setProperty("margin-bottom", "14px", "important");
+    }
+
+    const meta = clone.querySelector(".story-meta");
+    if (meta) {
+      meta.style.setProperty("font-size", "22px", "important");
+      meta.style.setProperty("margin-bottom", "14px", "important");
+      meta.style.setProperty("column-gap", "24px", "important");
+    }
+
+    const description = clone.querySelector(".story-description");
+    if (description) {
+      description.style.setProperty("font-size", "23px", "important");
+      description.style.setProperty("line-height", "1.28", "important");
+      description.style.setProperty("max-height", "60px", "important");
+      description.style.setProperty("margin-bottom", "15px", "important");
+      description.style.setProperty("overflow", "hidden", "important");
+    }
+
+    const qr = clone.querySelector(".story-qr-card");
+    if (qr) qr.style.setProperty("display", "none", "important");
+
+    const gallery = clone.querySelector(".story-gallery-grid");
+    if (gallery) gallery.style.setProperty("display", "none", "important");
+
+    const cta = clone.querySelector(".story-cta");
+    if (cta) {
+      cta.style.setProperty("padding", "16px 20px", "important");
+      cta.style.setProperty("border-radius", "20px", "important");
+      cta.style.setProperty("margin", "0", "important");
+    }
+    const ctaTitle = clone.querySelector(".story-cta-title");
+    if (ctaTitle) {
+      ctaTitle.style.setProperty("font-size", "20px", "important");
+      ctaTitle.style.setProperty("margin-bottom", "3px", "important");
+    }
+    const contact = clone.querySelector(".story-contact");
+    if (contact) contact.style.setProperty("font-size", "25px", "important");
+
+    const footer = clone.querySelector(".story-footer");
+    if (footer) footer.style.setProperty("display", "none", "important");
+
+    const features = clone.querySelector(".story-features");
+    if (features) features.style.setProperty("display", "none", "important");
   }
 
   function compactLayout(clone, format) {
@@ -290,7 +467,7 @@
     });
 
     const image = clone.querySelector("#story-image-preview");
-    applyImageFrame(image, config.height);
+    if (formatKey !== "feed") applyImageFrame(image, config.height);
 
     const blur = clone.querySelector("#story-bg-blur");
     const sourceImage = $("story-image-preview");
@@ -309,7 +486,8 @@
       }
     }
 
-    compactLayout(clone, formatKey);
+    if (formatKey === "feed") applyFeedLayout(clone);
+    else compactLayout(clone, formatKey);
     host.appendChild(clone);
     document.body.appendChild(host);
     return { host, clone, config };
@@ -368,6 +546,78 @@
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
+  let feedPreviewTimer = null;
+  let feedPreviewObserver = null;
+
+  function buildPreviewSwitcher() {
+    const mount = $("desktop-preview-mount");
+    const storyShell = mount?.querySelector(".story-preview-shell");
+    if (!mount || !storyShell || $("preview-format-switch")) return;
+
+    const switcher = document.createElement("div");
+    switcher.id = "preview-format-switch";
+    switcher.className = "preview-format-switch";
+    switcher.innerHTML = `
+      <button type="button" class="is-active" data-preview-format="story">Story 9:16</button>
+      <button type="button" data-preview-format="feed">Feed 4:5</button>
+    `;
+
+    const feedShell = document.createElement("div");
+    feedShell.id = "feed-preview-shell";
+    feedShell.className = "feed-preview-shell";
+    feedShell.innerHTML = '<div id="feed-preview-stage" class="feed-preview-stage"></div>';
+
+    mount.insertBefore(switcher, storyShell);
+    mount.appendChild(feedShell);
+
+    switcher.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-preview-format]");
+      if (!button) return;
+      const format = button.dataset.previewFormat;
+      switcher.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item === button));
+      storyShell.style.display = format === "story" ? "" : "none";
+      feedShell.style.display = format === "feed" ? "block" : "none";
+      if (format === "feed") refreshFeedPreview();
+    });
+  }
+
+  function refreshFeedPreview() {
+    const stage = $("feed-preview-stage");
+    const story = $("story-preview-wrapper");
+    if (!stage || !story) return;
+
+    const clone = story.cloneNode(true);
+    clone.classList.remove("shadow-2xl", "photo-edit-enabled", "is-dragging");
+    applyFeedLayout(clone);
+    stripPreviewIds(clone);
+
+    stage.replaceChildren(clone);
+  }
+
+  function scheduleFeedPreview() {
+    clearTimeout(feedPreviewTimer);
+    feedPreviewTimer = setTimeout(refreshFeedPreview, 90);
+  }
+
+  function observeStoryForFeed() {
+    const story = $("story-preview-wrapper");
+    if (!story) return;
+
+    feedPreviewObserver?.disconnect();
+    feedPreviewObserver = new MutationObserver(scheduleFeedPreview);
+    feedPreviewObserver.observe(story, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["src", "style", "class"],
+    });
+
+    document.addEventListener("input", scheduleFeedPreview);
+    document.addEventListener("change", scheduleFeedPreview);
+    scheduleFeedPreview();
+  }
+
   async function exportOne(formatKey) {
     const config = FORMAT_CONFIG[formatKey];
     if (!config) return;
@@ -407,7 +657,7 @@
           await navigator.share({
             files,
             title: "Materiais do imóvel",
-            text: "Story, Feed e Post quadrado - Assessoria Imobiliária",
+            text: "Story, Feed e Post quadrado - Imobiliária",
           });
           setStatus("✅ Pacote pronto para compartilhar.");
           return;
@@ -437,6 +687,8 @@
   document.addEventListener("DOMContentLoaded", () => {
     injectStyles();
     buildUi();
+    buildPreviewSwitcher();
+    observeStoryForFeed();
 
     document.addEventListener("click", (event) => {
       const formatButton = event.target.closest("[data-export-format]");
