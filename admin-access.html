@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1115">
+  <title>Administração de Acessos • Story Imóveis</title>
+  <link rel="icon" href="/pwa-icon-pro-192.png" type="image/png">
+  <style>
+    :root{
+      --bg:#0a0f12;--card:#12191e;--card2:#171f24;--line:rgba(255,255,255,.08);
+      --text:#f4f6f7;--muted:#8e989f;--gold:#d8a23b;--gold2:#f0bd58;--green:#4f7f43;
+      --red:#7d342b;--paper:#f5f6f7;--ink:#192028
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:
+      radial-gradient(circle at 10% 0%,rgba(216,162,59,.08),transparent 24%),
+      radial-gradient(circle at 90% 5%,rgba(79,127,67,.08),transparent 26%),var(--bg);color:var(--text)}
+    button,input,select{font:inherit}
+    .hidden{display:none!important}
+    .shell{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:24px 0 42px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:46px;height:46px;border-radius:13px}
+    .brand strong{display:block;font-size:16px;letter-spacing:.02em}
+    .brand span{display:block;margin-top:2px;color:var(--gold);font-size:9px;letter-spacing:.16em}
+    .back{min-height:38px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.04);color:#fff;text-decoration:none;font-size:11px;font-weight:800}
+    .hero{display:grid;grid-template-columns:1.3fr .7fr;gap:14px;margin-bottom:14px}
+    .hero-card,.card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018));box-shadow:0 22px 60px rgba(0,0,0,.18)}
+    .hero-card{padding:20px}
+    .eyebrow{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:900}
+    h1{margin:7px 0 7px;font-size:28px;line-height:1;letter-spacing:-.04em}
+    .copy{color:var(--muted);font-size:11px;line-height:1.55;max-width:700px}
+    .status-card{padding:16px;display:grid;align-content:center;gap:8px}
+    .status-pill{display:inline-flex;width:max-content;padding:6px 9px;border-radius:999px;background:rgba(79,127,67,.14);border:1px solid rgba(79,127,67,.28);color:#a7d39d;font-size:9px;font-weight:900}
+    .status-card strong{font-size:14px}
+    .status-card small{color:var(--muted);font-size:9px;line-height:1.4}
+    .login{width:min(440px,100%);margin:60px auto;padding:22px}
+    .field{display:grid;gap:6px;margin-top:10px}
+    .field label{font-size:10px;font-weight:850;color:#cbd2d6}
+    .field input,.field select{width:100%;min-height:44px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:#192017;color:#fff;outline:none}
+    .field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(216,162,59,.1)}
+    .primary{min-height:44px;border:0;border-radius:10px;background:linear-gradient(135deg,#c4892a,#e3b04f);color:#17120a;font-weight:950;cursor:pointer}
+    .login .primary{width:100%;margin-top:14px}
+    .msg{min-height:18px;margin-top:8px;color:#e9c778;font-size:9px}
+    .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+    .plan{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+    .plan.active{border-color:rgba(216,162,59,.45);background:rgba(216,162,59,.07)}
+    .plan small{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+    .plan strong{display:block;margin-top:5px;font-size:14px}
+    .plan b{display:block;margin-top:8px;font-size:20px;color:#f0cd82}
+    .plan span{font-size:9px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:.78fr 1.22fr;gap:14px}
+    .card{padding:16px}
+    .card h2{margin:0 0 4px;font-size:15px}
+    .card-sub{color:var(--muted);font-size:9px;margin-bottom:12px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .form-grid .wide{grid-column:1/-1}
+    .form-grid input,.form-grid select{width:100%;min-height:40px;padding:8px 9px;border-radius:9px;border:1px solid var(--line);background:#192017;color:#fff;outline:none}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .toolbar input{min-height:38px;flex:1;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:#11181c;color:#fff}
+    .list{display:grid;gap:8px}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px;border:1px solid rgba(255,255,255,.065);border-radius:11px;background:rgba(0,0,0,.14)}
+    .row-title{font-size:11px;font-weight:900}
+    .row-meta{margin-top:3px;color:var(--muted);font-size:8.5px;line-height:1.45}
+    .row-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+    .mini{min-height:32px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;font-size:8.5px;font-weight:900;cursor:pointer}
+    .mini.gold{background:#8d611f;border-color:#a7772c}
+    .mini.green{background:#3f6837;border-color:#527f47}
+    .mini.red{background:#4a2722;border-color:#6c352e;color:#ffc5bb}
+    .empty{padding:20px;text-align:center;color:var(--muted);font-size:10px}
+    .footer-actions{display:flex;justify-content:flex-end;margin-top:12px}
+    @media(max-width:860px){
+      .shell{width:min(100% - 18px,1180px);padding-top:12px}
+      .hero,.grid{grid-template-columns:1fr}
+      .plans{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .form-grid .wide{grid-column:auto}
+      .row{grid-template-columns:1fr}
+      .row-actions{justify-content:flex-start}
+      h1{font-size:23px}
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="top">
+      <div class="brand">
+        <img src="/pwa-icon-pro-192.png" alt="Story Imóveis">
+        <div><strong>STORY</strong><span>IMÓVEIS • ADMIN</span></div>
+      </div>
+      <a class="back" href="/">Voltar ao gerador</a>
+    </div>
+
+    <section id="login-card" class="card login">
+      <div class="eyebrow">Área restrita</div>
+      <h1 style="font-size:23px">Painel de acessos</h1>
+      <div class="copy">Entre com a conta administradora da plataforma. Este painel é separado do gerador e não bloqueia seus clientes enquanto a monetização estiver em teste.</div>
+      <form id="login-form">
+        <div class="field"><label>E-mail</label><input id="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label>Senha</label><input id="password" type="password" autocomplete="current-password" minlength="8" required></div>
+        <button class="primary" type="submit">Entrar no painel</button>
+        <div id="login-msg" class="msg"></div>
+      </form>
+    </section>
+
+    <div id="admin-app" class="hidden">
+      <section class="hero">
+        <div class="hero-card">
+          <div class="eyebrow">Monetização</div>
+          <h1>Controle de clientes e acessos</h1>
+          <div class="copy">Cadastre imobiliárias, escolha o plano, defina o vencimento e controle quem pode usar o sistema. O login obrigatório do gerador só será ligado quando você decidir.</div>
+        </div>
+        <div class="hero-card status-card">
+          <span id="access-mode" class="status-pill">Verificando...</span>
+          <strong id="access-status-title">Controle de acesso</strong>
+          <small id="access-status-copy">Carregando configuração atual.</small>
+        </div>
+      </section>
+
+      <section id="plans" class="plans"></section>
+
+      <section class="grid">
+        <div class="card">
+          <h2>Nova imobiliária</h2>
+          <div class="card-sub">Crie o cliente e o primeiro usuário administrador.</div>
+          <div class="form-grid">
+            <input id="org-name" class="wide" placeholder="Nome da imobiliária">
+            <input id="owner-name" placeholder="Responsável">
+            <input id="owner-email" type="email" placeholder="E-mail">
+            <input id="owner-password" type="password" placeholder="Senha inicial (mín. 8)">
+            <select id="org-plan">
+              <option value="individual">Individual</option>
+              <option value="imobiliaria">Imobiliária</option>
+              <option value="equipe">Equipe</option>
+            </select>
+            <input id="org-days" type="number" min="1" value="30" placeholder="Dias">
+            <button id="create-org" class="primary wide" type="button">Criar cliente e liberar acesso</button>
+          </div>
+          <div id="create-msg" class="msg"></div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <h2>Clientes</h2>
+              <div class="card-sub" style="margin:3px 0 0">Planos, usuários e vencimentos.</div>
+            </div>
+            <input id="search" placeholder="Buscar imobiliária">
+          </div>
+          <div id="client-list" class="list"></div>
+        </div>
+      </section>
+
+      <div class="footer-actions">
+        <button id="logout" class="mini red" type="button">Sair do painel</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/admin-access.js?v=1"></script>
+</body>
+</html>
