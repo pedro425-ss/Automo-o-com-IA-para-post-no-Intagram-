@@ -336,7 +336,75 @@
       }
 
       @media(max-width:899px){
-        html,body{background:#090d10!important}
+        html,body{
+          width:100%!important;max-width:100%!important;min-width:0!important;
+          overflow-x:hidden!important;background:#090d10!important
+        }
+        body.mobile-wizard-active{
+          width:100%!important;max-width:100%!important;min-width:0!important;
+          margin:0!important;padding-left:8px!important;padding-right:8px!important;
+          box-sizing:border-box!important
+        }
+        body.mobile-wizard-active>.max-w-6xl{
+          display:block!important;
+          width:100%!important;max-width:100%!important;min-width:0!important;
+          margin:0!important;padding:0!important;gap:0!important
+        }
+        body.mobile-wizard-active .panel{
+          display:block!important;
+          width:100%!important;max-width:100%!important;min-width:0!important;
+          margin:0!important;box-sizing:border-box!important
+        }
+        body.mobile-wizard-active .panel>*,
+        body.mobile-wizard-active .section,
+        body.mobile-wizard-active .story-template-panel,
+        body.mobile-wizard-active .workflow-panel,
+        body.mobile-wizard-active .property-panel,
+        body.mobile-wizard-active .logo-library,
+        body.mobile-wizard-active .cloud-profile-box,
+        body.mobile-wizard-active .export-formats-box,
+        body.mobile-wizard-active .story-set-box,
+        body.mobile-wizard-active .auto-brand-box,
+        body.mobile-wizard-active #realty-profile-panel{
+          width:100%!important;max-width:100%!important;min-width:0!important;
+          box-sizing:border-box!important
+        }
+        body.mobile-wizard-active .field,
+        body.mobile-wizard-active .grid-2,
+        body.mobile-wizard-active .adjustment-grid,
+        body.mobile-wizard-active .story-extra-grid,
+        body.mobile-wizard-active .story-template-grid,
+        body.mobile-wizard-active .realty-profile-card-grid{
+          min-width:0!important;max-width:100%!important
+        }
+        body.mobile-wizard-active .grid-2,
+        body.mobile-wizard-active .adjustment-grid,
+        body.mobile-wizard-active .story-extra-grid{
+          grid-template-columns:minmax(0,1fr)!important
+        }
+        body.mobile-wizard-active input,
+        body.mobile-wizard-active textarea,
+        body.mobile-wizard-active select,
+        body.mobile-wizard-active button{
+          max-width:100%!important;min-width:0
+        }
+        body.mobile-wizard-active .input,
+        body.mobile-wizard-active .textarea,
+        body.mobile-wizard-active .select,
+        body.mobile-wizard-active .file,
+        body.mobile-wizard-active .btn{
+          width:100%!important;box-sizing:border-box!important
+        }
+        body.mobile-wizard-active .realty-profile-card-grid{
+          grid-template-columns:repeat(2,minmax(0,1fr))!important
+        }
+        body.mobile-wizard-active .realty-profile-card{
+          min-width:0!important;width:100%!important
+        }
+        body.mobile-wizard-active .mobile-step-chips{
+          width:100%!important;max-width:100%!important
+        }
+
         #desktop-wizard,
         #desktop-wizard-footer{
           display:none!important;
