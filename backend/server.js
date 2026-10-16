@@ -9,7 +9,7 @@ import { Pool } from "pg";
 import sharp from "sharp";
 
 const app = express();
-const APP_BUILD = "villela-embedded-gallery-20261016-1400";
+const APP_BUILD = "villela-gallery-deep-scan-20261016-1410";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -698,6 +698,43 @@ function collectVillelaGalleryCandidates($, pageUrl, listingCode = "") {
       });
     });
 
+    // Muitas galerias modernas guardam as demais fotos em <source>, links e atributos data-*.
+    container.find("source").each((index, el) => {
+      const source = $(el);
+      ["src", "srcset", "data-src", "data-srcset"].forEach((attr) => {
+        const value = source.attr(attr);
+        if (value) addImageCandidate(images, value, pageUrl, 172 - Math.min(index, 20), "villela-gallery:source:" + attr, listingCode);
+      });
+    });
+
+    container.find("a").each((index, el) => {
+      const anchor = $(el);
+      ["href", "data-src", "data-image", "data-photo", "data-foto", "data-full", "data-original"].forEach((attr) => {
+        const value = anchor.attr(attr);
+        if (!value) return;
+        if (/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(value) || /(?:foto|photo|image|img|gallery|galeria)/i.test(value)) {
+          addImageCandidate(images, value, pageUrl, 168 - Math.min(index, 20), "villela-gallery:a:" + attr, listingCode);
+        }
+      });
+    });
+
+    container.find("*").each((index, el) => {
+      const nodeEl = $(el);
+      const attrs = el.attribs || {};
+      for (const [attrName, attrValue] of Object.entries(attrs)) {
+        if (!attrValue || typeof attrValue !== "string") continue;
+        if (!/^(?:data-|src|srcset|href|poster)/i.test(attrName)) continue;
+
+        const cleaned = attrValue.replace(/\\u002F/gi, "/").replace(/\\\//g, "/");
+        if (
+          /\.(?:jpe?g|png|webp|avif)(?:[?#\s]|$)/i.test(cleaned) ||
+          /(?:foto|photo|image|img|gallery|galeria)/i.test(attrName)
+        ) {
+          addImageCandidate(images, cleaned, pageUrl, 150 - Math.min(index, 30), "villela-gallery:attr:" + attrName, listingCode);
+        }
+      }
+    });
+
     container.find('[style*="background"]').each((index, el) => {
       const nodeEl = $(el);
       const linkedListing = nodeEl.closest('a[href*="/imovel/"]').attr("href") || "";
@@ -809,6 +846,14 @@ function collectImageCandidates($, pageUrl, jsonLd = [], listingCode = "") {
     });
     ["srcset", "data-srcset"].forEach((attr) => {
       addImageCandidate(candidates, img.attr(attr), pageUrl, baseScore + 6, "img:" + attr, listingCode);
+    });
+  });
+
+  $("picture source, source").each((index, el) => {
+    const source = $(el);
+    ["src", "srcset", "data-src", "data-srcset"].forEach((attr) => {
+      const value = source.attr(attr);
+      if (value) addImageCandidate(candidates, value, pageUrl, 76 - Math.min(index, 18), "source:" + attr, listingCode);
     });
   });
 
