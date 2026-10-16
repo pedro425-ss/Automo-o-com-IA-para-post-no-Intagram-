@@ -273,7 +273,7 @@
       storySetBox.className = "story-set-box";
       storySetBox.innerHTML = `
         <div class="story-set-title">Pacote de Stories</div>
-        <div class="story-set-copy">Gere 3 versões com o mesmo visual do Story principal e fotos diferentes do próprio anúncio quando disponíveis.</div>
+        <div class="story-set-copy">Gere 3 versões com o mesmo visual. O Story 2 usa uma foto extra segura; o Story 3 reutiliza essa foto, salvo quando você selecionar uma terceira imagem manualmente.</div>
         <div class="story-set-actions">
           <button id="build-story-set" class="btn btn-green" type="button">Gerar 3 Stories</button>
           <button id="download-story-set" class="btn btn-gold" type="button">Baixar 3 PNGs</button>
@@ -330,18 +330,6 @@
       };
     }
 
-    function looksLikePropertyPhoto(src) {
-      const value = String(src || "");
-      if (!value) return false;
-
-      // Data URLs from the backend are usually actual downloaded photos.
-      if (value.startsWith("data:image/")) return true;
-
-      const lower = value.toLowerCase();
-      if (/(logo|banner|brand|marca|sprite|icon|favicon|placeholder)/i.test(lower)) return false;
-      return true;
-    }
-
     function buildSlides() {
       const base = getBaseData();
 
@@ -361,14 +349,12 @@
         safeListingImages[1] ||
         mainImage;
 
-      const thirdCandidate =
+      // Automaticamente, o Story 3 reutiliza a segunda foto já validada.
+      // Uma terceira foto diferente só é usada quando foi escolhida manualmente.
+      const thirdImage =
         manualImages[2] ||
-        safeListingImages[2] ||
-        "";
-
-      const thirdImage = looksLikePropertyPhoto(thirdCandidate)
-        ? thirdCandidate
-        : (manualImages[1] || safeListingImages[1] || mainImage);
+        secondImage ||
+        mainImage;
 
       return [
         {
