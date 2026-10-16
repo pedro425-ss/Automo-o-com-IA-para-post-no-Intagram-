@@ -97,6 +97,7 @@ app.get("/adjustments.css", (req, res) => sendFrontendFile(res, "adjustments.css
 app.get("/mobile.css", (req, res) => sendFrontendFile(res, "mobile.css"));
 app.get("/adjustments.js", (req, res) => sendFrontendFile(res, "adjustments.js"));
 app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
+app.get("/autofill.js", (req, res) => sendFrontendFile(res, "autofill.js"));
 
 app.get("/script.js", (req, res) => {
   disableFrontendCache(res);
@@ -106,7 +107,6 @@ app.get("/script.js", (req, res) => {
     const mainScript = fs.readFileSync(path.join(frontendDir, "script.js"), "utf8");
     const extrasScript = fs.readFileSync(path.join(frontendDir, "extras.js"), "utf8");
     const storySetScript = fs.readFileSync(path.join(frontendDir, "story-set.js"), "utf8");
-    const autofillScript = fs.readFileSync(path.join(frontendDir, "autofill.js"), "utf8");
     const templatesScript = fs.readFileSync(path.join(frontendDir, "templates.js"), "utf8");
     const workflowScript = fs.readFileSync(path.join(frontendDir, "workflow.js"), "utf8");
     const exportFormatsScript = fs.readFileSync(path.join(frontendDir, "export-formats.js"), "utf8");
@@ -115,7 +115,7 @@ app.get("/script.js", (req, res) => {
     const cloudProfilesScript = fs.readFileSync(path.join(frontendDir, "cloud-profiles.js"), "utf8");
 
     return res.send(
-      `${mainScript}\n\n/* Recursos avançados */\n${extrasScript}\n\n/* Pacote de 3 Stories */\n${storySetScript}\n\n/* Preenchimento automático */\n${autofillScript}\n\n/* Modelos de Story */\n${templatesScript}\n\n/* Rascunhos e histórico */\n${workflowScript}\n\n/* Exportação Feed e Quadrado */\n${exportFormatsScript}\n\n/* Painel de imóveis salvos */\n${propertiesScript}\n\n/* Biblioteca de logos */\n${logoLibraryScript}\n\n/* Perfis sincronizados na nuvem */\n${cloudProfilesScript}`
+      `${mainScript}\n\n/* Recursos avançados */\n${extrasScript}\n\n/* Pacote de 3 Stories */\n${storySetScript}\n\n/* Modelos de Story */\n${templatesScript}\n\n/* Rascunhos e histórico */\n${workflowScript}\n\n/* Exportação Feed e Quadrado */\n${exportFormatsScript}\n\n/* Painel de imóveis salvos */\n${propertiesScript}\n\n/* Biblioteca de logos */\n${logoLibraryScript}\n\n/* Perfis sincronizados na nuvem */\n${cloudProfilesScript}`
     );
   } catch (error) {
     console.error("❌ Erro ao montar script do frontend:", error.message);
