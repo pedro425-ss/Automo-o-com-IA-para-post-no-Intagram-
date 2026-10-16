@@ -3,7 +3,7 @@ const APP_SHELL = [
   "/",
   "/Style.css",
   "/script.js",\n  "/auth.js?v=1",
-  "/autofill.js?v=3",
+  "/autofill.js?v=4",
   "/brand-theme.js?v=4",
   "/mobile-wizard.js?v=8",
   "/realty-profile.js?v=1",
