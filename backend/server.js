@@ -10,7 +10,7 @@ import sharp from "sharp";
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "crypto";
 
 const app = express();
-const APP_BUILD = "safe-paid-access-20261016-1625";
+const APP_BUILD = "org-design-extractor-20261022-1430";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
