@@ -270,7 +270,9 @@ function ensureBrandingTable() {
         show_qr BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
+      );
+      ALTER TABLE organization_design_profiles ADD COLUMN IF NOT EXISTS brand_name TEXT NOT NULL DEFAULT '';
+      ALTER TABLE organization_design_profiles ADD COLUMN IF NOT EXISTS contact TEXT NOT NULL DEFAULT '';
     `).catch((error) => {
       brandingTablePromise = null;
       throw error;
@@ -312,6 +314,8 @@ function ensureOrgDesignTable() {
     orgDesignTablePromise = pool.query(`
       CREATE TABLE IF NOT EXISTS organization_design_profiles (
         organization_id TEXT PRIMARY KEY REFERENCES access_organizations(id) ON DELETE CASCADE,
+        brand_name TEXT NOT NULL DEFAULT '',
+        contact TEXT NOT NULL DEFAULT '',
         market TEXT NOT NULL DEFAULT 'urbano',
         positioning TEXT NOT NULL DEFAULT 'tradicional',
         primary_color TEXT NOT NULL DEFAULT '#4f7f43',
@@ -341,6 +345,8 @@ function mapOrgDesign(row) {
   if (!row) return null;
   return {
     organizationId: row.organization_id,
+    brandName: row.brand_name,
+    contact: row.contact,
     market: row.market,
     positioning: row.positioning,
     primaryColor: row.primary_color,
@@ -530,6 +536,8 @@ app.put("/api/account/design-profile", requireAuth, requireOrgAdmin, async (req,
     const allowedButton = ["rounded","square","minimal"];
     const allowedLogoPositions = ["top-left","top-center","top-right"];
 
+    const brandName = String(req.body?.brandName || "").trim().slice(0, 100);
+    const contact = String(req.body?.contact || "").trim().slice(0, 120);
     const market = allowedMarkets.includes(req.body?.market) ? req.body.market : "urbano";
     const positioning = allowedPositions.includes(req.body?.positioning) ? req.body.positioning : "tradicional";
     const primaryColor = validHexColor(req.body?.primaryColor, "#4f7f43");
@@ -551,9 +559,11 @@ app.put("/api/account/design-profile", requireAuth, requireOrgAdmin, async (req,
 
     const result = await pool.query(
       `INSERT INTO organization_design_profiles
-       (organization_id,market,positioning,primary_color,secondary_color,font_style,badge_style,button_style,logo_position,logo_size,content_y,cta_text,footer_text,show_qr,show_footer,logo_data,updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
+       (organization_id,brand_name,contact,market,positioning,primary_color,secondary_color,font_style,badge_style,button_style,logo_position,logo_size,content_y,cta_text,footer_text,show_qr,show_footer,logo_data,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
        ON CONFLICT (organization_id) DO UPDATE SET
+         brand_name=EXCLUDED.brand_name,
+         contact=EXCLUDED.contact,
          market=EXCLUDED.market,
          positioning=EXCLUDED.positioning,
          primary_color=EXCLUDED.primary_color,
@@ -572,7 +582,7 @@ app.put("/api/account/design-profile", requireAuth, requireOrgAdmin, async (req,
          updated_at=NOW()
        RETURNING *`,
       [
-        req.authUser.organization_id, market, positioning, primaryColor, secondaryColor,
+        req.authUser.organization_id, brandName, contact, market, positioning, primaryColor, secondaryColor,
         fontStyle, badgeStyle, buttonStyle, logoPosition, logoSize, contentY,
         ctaText, footerText, showQr, showFooter, logoData
       ]
