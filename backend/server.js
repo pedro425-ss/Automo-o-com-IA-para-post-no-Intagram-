@@ -304,6 +304,67 @@ function mapProfile(row) {
   };
 }
 
+
+let orgDesignTablePromise = null;
+function ensureOrgDesignTable() {
+  if (!pool) return Promise.reject(new Error("DATABASE_URL não configurada"));
+  if (!orgDesignTablePromise) {
+    orgDesignTablePromise = pool.query(`
+      CREATE TABLE IF NOT EXISTS organization_design_profiles (
+        organization_id TEXT PRIMARY KEY REFERENCES access_organizations(id) ON DELETE CASCADE,
+        market TEXT NOT NULL DEFAULT 'urbano',
+        positioning TEXT NOT NULL DEFAULT 'tradicional',
+        primary_color TEXT NOT NULL DEFAULT '#4f7f43',
+        secondary_color TEXT NOT NULL DEFAULT '#d8a23b',
+        font_style TEXT NOT NULL DEFAULT 'classico',
+        badge_style TEXT NOT NULL DEFAULT 'rounded',
+        button_style TEXT NOT NULL DEFAULT 'rounded',
+        logo_position TEXT NOT NULL DEFAULT 'top-left',
+        logo_size INTEGER NOT NULL DEFAULT 150,
+        content_y INTEGER NOT NULL DEFAULT 0,
+        cta_text TEXT NOT NULL DEFAULT 'Fale conosco',
+        footer_text TEXT NOT NULL DEFAULT '',
+        show_qr BOOLEAN NOT NULL DEFAULT TRUE,
+        show_footer BOOLEAN NOT NULL DEFAULT TRUE,
+        logo_data TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `).catch((error) => {
+      orgDesignTablePromise = null;
+      throw error;
+    });
+  }
+  return orgDesignTablePromise;
+}
+
+function mapOrgDesign(row) {
+  if (!row) return null;
+  return {
+    organizationId: row.organization_id,
+    market: row.market,
+    positioning: row.positioning,
+    primaryColor: row.primary_color,
+    secondaryColor: row.secondary_color,
+    fontStyle: row.font_style,
+    badgeStyle: row.badge_style,
+    buttonStyle: row.button_style,
+    logoPosition: row.logo_position,
+    logoSize: row.logo_size,
+    contentY: row.content_y,
+    ctaText: row.cta_text,
+    footerText: row.footer_text,
+    showQr: row.show_qr,
+    showFooter: row.show_footer,
+    logoData: row.logo_data,
+    updatedAt: row.updated_at,
+  };
+}
+
+function validHexColor(value, fallback) {
+  const text = String(value || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(text) ? text.toLowerCase() : fallback;
+}
+
 function disableFrontendCache(res) {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.set("Pragma", "no-cache");
@@ -331,6 +392,7 @@ app.get("/logo-library.js", (req, res) => sendFrontendFile(res, "logo-library.js
 app.get("/cloud-profiles.js", (req, res) => sendFrontendFile(res, "cloud-profiles.js"));
 app.get("/brand-theme.js", (req, res) => sendFrontendFile(res, "brand-theme.js"));
 app.get("/realty-profile.js", (req, res) => sendFrontendFile(res, "realty-profile.js"));
+app.get("/org-design.js", (req, res) => sendFrontendFile(res, "org-design.js"));
 app.get("/professional-ui.js", (req, res) => sendFrontendFile(res, "professional-ui.js"));
 app.get("/auth.js", (req, res) => sendFrontendFile(res, "auth.js"));
 app.get("/admin-acessos", (req, res) => sendFrontendFile(res, "admin-access.html"));
@@ -434,6 +496,93 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
       expiresAt: user.org_expires_at,
     },
   });
+});
+
+
+app.get("/api/account/design-profile", requireAuth, async (req, res) => {
+  try {
+    if (req.authUser.role === "superadmin" || !req.authUser.organization_id) {
+      return res.status(400).json({ erro: "Selecione uma imobiliária para usar um perfil visual." });
+    }
+    await ensureOrgDesignTable();
+    const result = await pool.query(
+      "SELECT * FROM organization_design_profiles WHERE organization_id = $1 LIMIT 1",
+      [req.authUser.organization_id]
+    );
+    return res.json({ profile: mapOrgDesign(result.rows[0]) });
+  } catch (error) {
+    console.error("❌ Carregar perfil visual:", error.message);
+    return res.status(500).json({ erro: "Erro ao carregar perfil visual." });
+  }
+});
+
+app.put("/api/account/design-profile", requireAuth, requireOrgAdmin, async (req, res) => {
+  try {
+    if (req.authUser.role === "superadmin" || !req.authUser.organization_id) {
+      return res.status(400).json({ erro: "Selecione uma imobiliária para editar um perfil visual." });
+    }
+    await ensureOrgDesignTable();
+
+    const allowedMarkets = ["urbano","rural","misto"];
+    const allowedPositions = ["tradicional","alto","popular"];
+    const allowedFonts = ["classico","moderno","elegante","forte"];
+    const allowedBadge = ["rounded","square","premium"];
+    const allowedButton = ["rounded","square","minimal"];
+    const allowedLogoPositions = ["top-left","top-center","top-right"];
+
+    const market = allowedMarkets.includes(req.body?.market) ? req.body.market : "urbano";
+    const positioning = allowedPositions.includes(req.body?.positioning) ? req.body.positioning : "tradicional";
+    const primaryColor = validHexColor(req.body?.primaryColor, "#4f7f43");
+    const secondaryColor = validHexColor(req.body?.secondaryColor, "#d8a23b");
+    const fontStyle = allowedFonts.includes(req.body?.fontStyle) ? req.body.fontStyle : "classico";
+    const badgeStyle = allowedBadge.includes(req.body?.badgeStyle) ? req.body.badgeStyle : "rounded";
+    const buttonStyle = allowedButton.includes(req.body?.buttonStyle) ? req.body.buttonStyle : "rounded";
+    const logoPosition = allowedLogoPositions.includes(req.body?.logoPosition) ? req.body.logoPosition : "top-left";
+    const logoSize = Math.max(90, Math.min(320, Number(req.body?.logoSize || 150)));
+    const contentY = Math.max(-220, Math.min(220, Number(req.body?.contentY || 0)));
+    const ctaText = String(req.body?.ctaText || "Fale conosco").trim().slice(0, 80) || "Fale conosco";
+    const footerText = String(req.body?.footerText || "").trim().slice(0, 180);
+    const showQr = req.body?.showQr !== false;
+    const showFooter = req.body?.showFooter !== false;
+    const logoData = String(req.body?.logoData || "");
+    if (logoData && (!logoData.startsWith("data:image/") || logoData.length > 2500000)) {
+      return res.status(400).json({ erro: "Logo inválido ou muito grande." });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO organization_design_profiles
+       (organization_id,market,positioning,primary_color,secondary_color,font_style,badge_style,button_style,logo_position,logo_size,content_y,cta_text,footer_text,show_qr,show_footer,logo_data,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
+       ON CONFLICT (organization_id) DO UPDATE SET
+         market=EXCLUDED.market,
+         positioning=EXCLUDED.positioning,
+         primary_color=EXCLUDED.primary_color,
+         secondary_color=EXCLUDED.secondary_color,
+         font_style=EXCLUDED.font_style,
+         badge_style=EXCLUDED.badge_style,
+         button_style=EXCLUDED.button_style,
+         logo_position=EXCLUDED.logo_position,
+         logo_size=EXCLUDED.logo_size,
+         content_y=EXCLUDED.content_y,
+         cta_text=EXCLUDED.cta_text,
+         footer_text=EXCLUDED.footer_text,
+         show_qr=EXCLUDED.show_qr,
+         show_footer=EXCLUDED.show_footer,
+         logo_data=EXCLUDED.logo_data,
+         updated_at=NOW()
+       RETURNING *`,
+      [
+        req.authUser.organization_id, market, positioning, primaryColor, secondaryColor,
+        fontStyle, badgeStyle, buttonStyle, logoPosition, logoSize, contentY,
+        ctaText, footerText, showQr, showFooter, logoData
+      ]
+    );
+
+    return res.json({ profile: mapOrgDesign(result.rows[0]) });
+  } catch (error) {
+    console.error("❌ Salvar perfil visual:", error.message);
+    return res.status(500).json({ erro: "Erro ao salvar perfil visual." });
+  }
 });
 
 app.get("/api/account/users", requireAuth, requireOrgAdmin, async (req, res) => {
