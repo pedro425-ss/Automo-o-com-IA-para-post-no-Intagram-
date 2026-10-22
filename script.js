@@ -467,6 +467,30 @@ document.addEventListener("DOMContentLoaded", () => {
     ]);
   }
 
+  function imageToDataUrl(img) {
+    try {
+      if (!img?.src) return "";
+      if (/^data:/i.test(img.src)) return img.src;
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) return "";
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL("image/jpeg", 0.94);
+    } catch {
+      return "";
+    }
+  }
+
+  function sanitizeExportImages(container) {
+    container.querySelectorAll("img").forEach((img) => {
+      img.alt = "";
+      if (img.complete && img.naturalWidth > 0) return;
+      img.style.setProperty("visibility", "hidden", "important");
+    });
+  }
+
   async function waitForImages(container, timeoutMs = 8000) {
     const imgs = [...container.querySelectorAll("img")].filter((img) => img.src);
     await Promise.all(imgs.map((img) => {
@@ -532,9 +556,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const cloneImage = clone.querySelector("#story-image-preview");
     const cloneBlur = clone.querySelector("#story-bg-blur");
     if (cloneImage && storyImage?.src) {
-      cloneImage.src = storyImage.src;
+      const safeImage = imageToDataUrl(storyImage);
+      cloneImage.alt = "";
+      cloneImage.src = safeImage || storyImage.src;
       cloneImage.classList.remove("hidden");
       applyFrameToElement(cloneImage, cloneBlur, storyImage);
+      if (cloneBlur && safeImage && !cloneBlur.classList.contains("hidden")) {
+        cloneBlur.style.setProperty("background-image", `url('${safeImage}')`, "important");
+      }
     }
 
     host.appendChild(clone);
@@ -558,6 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await waitForImages(clone, 8000);
+      sanitizeExportImages(clone);
       await nextFrame();
       await nextFrame();
 
