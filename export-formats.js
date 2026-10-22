@@ -442,6 +442,7 @@
 
     const clone = story.cloneNode(true);
     clone.id = `export-${formatKey}-${Date.now()}`;
+    clone.querySelectorAll("img").forEach((img) => { img.alt = ""; });
     clone.classList.remove("shadow-2xl");
     clone.style.setProperty("position", "relative", "important");
     clone.style.setProperty("left", "0", "important");
@@ -500,6 +501,10 @@
     try {
       if (document.fonts?.ready) await document.fonts.ready.catch?.(() => undefined);
       await waitForImages(clone, 8000);
+      clone.querySelectorAll("img").forEach((img) => {
+        img.alt = "";
+        if (!img.complete || !img.naturalWidth) img.style.setProperty("visibility", "hidden", "important");
+      });
       await wait(80);
       const dataUrl = await domtoimage.toPng(clone, {
         width: config.width,
